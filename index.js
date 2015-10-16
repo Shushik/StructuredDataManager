@@ -565,6 +565,12 @@ var StructuredDataManager = StructuredDataManager || (function() {
             tm0 = this._dom.rows[this.viewed];
             tm0.className += ' sdm__rows_are_viewed';
 
+            // Col appears
+            if ((tm0 = tm0.parentNode) && tm0.className.indexOf('is_viewed') == -1) {
+                tm0.className += ' sdm__col_is_viewed';
+            }
+            
+
             // Scroll to a viewed column
             this.move();
         },
@@ -902,9 +908,6 @@ var StructuredDataManager = StructuredDataManager || (function() {
                 if (id) {
                     this.view(id, false);
                 }
-
-                // Scroll to a viewed column
-                this.move();
             }
 
             return this;
