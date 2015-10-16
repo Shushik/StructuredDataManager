@@ -1,7 +1,7 @@
 /**
  * Tree structured data manager (ex b-finder)
  *
- * @page    
+ * @page    https://github.com/Shushik/StructuredDataManager
  * @author  Shushik <silkleopard@yandex.ru>
  * @version 2.0
  */
@@ -195,9 +195,9 @@ var StructuredDataManager = StructuredDataManager || (function() {
 
             // 
             this._dom.pub('viewstart', {
-                id      : this.viewed,
-                error   : this._binded.fail,
-                success : this._binded.viewed
+                id   : this.viewed,
+                done : this._binded.viewed,
+                fail : this._binded.fail
             });
         },
         /**
@@ -347,6 +347,7 @@ var StructuredDataManager = StructuredDataManager || (function() {
             var
                 al0 = '',
                 al1 = '',
+                al2 = '',
                 tm0 = {hold : 5, load : 5, view : 5};
 
             // Check if the 
@@ -362,26 +363,27 @@ var StructuredDataManager = StructuredDataManager || (function() {
             // Parse and fix given arguments
             this._args = {
                 multiple : args.multiple ? true : false,
-                cols     : args.cols > 1 && args.cols < 6 ? args.cols : 3,
+                cols_num : args.cols_num > 1 && args.cols_num < 6 ? args.cols_num : 3,
                 id       : this.id,
-                hide     : args.hide ? args.hide + '' : '',
-                hint     : args.hint ?
-                           args.hint + '' :
+                hide_txt : args.hide_txt ? args.hide_txt + '' : '',
+                hint_txt : args.hint_txt ?
+                           args.hint_txt + '' :
                            'Single click — expand; double click — select; ' +
                            'Ctrl + double click — multi select or Cmd + double click; ' +
                            'Esc — close',
-                name     : args.name ? args.name + '' : '',
+                name_txt : args.name_txt ? args.name_txt + '' : '',
                 wrapper  : node ? node : self.document.body
             };
 
             // Save time limits for main events
             for (al0 in tm0) {
                 al1 = 'on' + al0 + 'start';
+                al2 = al0 + '_ttl';
 
                 // Check if the start event handler is set
                 if (typeof args[al1] == 'function') {
-                    this._args[al0] = args[al0] > tm0[al0] ?
-                                      args[al0] :
+                    this._args[al0] = args[al2] > tm0[al0] ?
+                                      args[al2] :
                                       tm0[al0];
                 }
             }
@@ -729,9 +731,9 @@ var StructuredDataManager = StructuredDataManager || (function() {
 
             // Run the holdstart event
             this._dom.pub('holdstart', {
-                id      : this.holded,
-                error   : this._binded.fail,
-                success : this._binded.holded
+                id   : this.holded,
+                done : this._binded.holded,
+                fail : this._binded.fail
             });
 
             return this;
@@ -773,8 +775,8 @@ var StructuredDataManager = StructuredDataManager || (function() {
 
             // Fire the loadingstart event
             this._dom.pub('loadstart', {
-                error   : this._binded.fail,
-                success : this._binded.loaded
+                done : this._binded.loaded,
+                fail : this._binded.fail
             });
 
             return this;
@@ -945,9 +947,10 @@ var StructuredDataManager = StructuredDataManager || (function() {
      *
      * @type {string}
      */
-    self._events = 'drop,viewstart,viewfinish,' +
-                   'loadstart,loadfinish,holdstart,' +
-                   'renderstart,holdfinish,renderfinish';
+    self._events = 'holdstart,holdfinish,' +
+                   'loadstart,loadfinish,' +
+                   'viewstart,viewfinish,' +
+                   'renderstart,renderfinish';
 
     /**
      * Installed modules ids
@@ -997,7 +1000,7 @@ StructuredDataManager.DOM = StructuredDataManager.DOM || (function() {
     function
         self(args) {
             var
-                it0  = args.cols,
+                it0  = args.cols_num,
                 node = args.wrapper;
 
             // Root (curtain) node
@@ -1017,30 +1020,26 @@ StructuredDataManager.DOM = StructuredDataManager.DOM || (function() {
 
             // Title
             node = this.name = self.create({
-                title     : args.name,
+                title     : args.name_txt,
                 className : 'sdm__name'
             }, node.parentNode);
 
             // Hide control
             node = this.hide = self.create({
-                title     : args.hide,
+                title     : args.hide_txt,
                 className : 'sdm__hide'
             }, node.parentNode);
 
             // Hint string
             node = this.hint = self.create({
                 className : 'sdm__hint',
-                innerHTML : args.hint
+                innerHTML : args.hint_txt
             }, node.parentNode);
 
             // Create needed number of columns
             this.cols = it0;
             this.cels = {};
             this.rows = {};
-
-            while (it0--) {
-                this.col();
-            }
         }
 
     /**
