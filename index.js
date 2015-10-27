@@ -805,21 +805,21 @@ var SDM = SDM || (function() {
          * Pull external data
          *
          * @param {string} id
-         * @param {string} what
+         * @param {string} action
          *
          * @return {object}
          */
-        pull : function(id, what) {
-            what = typeof what == 'string' ? what : 'load';
+        pull : function(id, action) {
+            action = typeof action == 'string' ? action : 'load';
 
             if (typeof id != 'string' && id != '-') {
                 return this;
             }
 
-            if (this.args[what + '_ttl']) {
+            if (this.args[action + '_ttl']) {
                 // Save the row id and process name into queue stack
-                if (!this._queue.match(new RegExp('(^|;)' + id + ':' + what))) {
-                    this._queue += (this._queue ? ';' : '') + id + ':' + what;
+                if (!this._queue.match(new RegExp('(^|;)' + id + ':' + action))) {
+                    this._queue += (this._queue ? ';' : '') + id + ':' + action;
                 }
 
                 // Try to run the first element in stack
@@ -827,7 +827,7 @@ var SDM = SDM || (function() {
                     this._pull();
                 }
             } else if (this['_' + what + 'ed']) {
-                this['_' + what + 'ed']();
+                this['_' + action + 'ed']();
             }
 
             return this;

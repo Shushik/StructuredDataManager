@@ -16,100 +16,149 @@
 
      param | value
     ==========================================================================
-     args | StructuredDataManager settings object.
+     args  | StructuredDataManager settings object.
     ==========================================================================
 
 
 
     Settings object properties:
 
-     alias           | value
+     alias               | value
     ==========================================================================
-     hold_cls        | True if multiselect is allowed.
+     hold_cls            | True if multiselect is allowed.
     --------------------------------------------------------------------------
-     cols_num        | Number of columns visible in frame (2—5).
+     cols_num            | Number of columns visible in frame (2—5).
     --------------------------------------------------------------------------
-     drop_ttl        | Number of seconds Finder will wait for the row
-                     | holding success.
+     drop_ttl            | Number of seconds module will wait for the row
+                         | deselection success.
     --------------------------------------------------------------------------
-     hold_ttl        | Number of seconds Finder will wait for the row
-                     | holding success.
+     hold_ttl            | Number of seconds module will wait for the row
+                         | selection success.
     --------------------------------------------------------------------------
-     load_ttl        | Number of seconds Finder will wait for the data
-                     | loading success.
+     load_ttl            | Number of seconds module will wait for the data
+                         | load success.
     --------------------------------------------------------------------------
-     view_ttl        | Number of seconds Finder will wait for the row
-                     | viewing success.
+     open_ttl            | Number of seconds module will wait for the cursor
+                         | set success.
     --------------------------------------------------------------------------
-     id              | SDM instance id. This instance could be found after
-                     | the initiation by StructuredDataManager[id].
+     id                  | SDM instance id. This instance could be found
+                         | after the initiation by StructuredDataManager[id].
     --------------------------------------------------------------------------
-     name_txt        | Title text.
+     name_txt            | Title text.
     --------------------------------------------------------------------------
-     hide_txt        | Hide controll title text.
+     hide_txt            | Hide controll title text.
     --------------------------------------------------------------------------
-     hint_txt        | Bottom hint text.
+     hint_txt            | Bottom hint text.
     --------------------------------------------------------------------------
-     wrapper         | String with the CSS path or DOM node for the wrapper
-                     | HTML element. document.body by default.
+     wrapper             | String with the CSS path or DOM node for the wrapper
+                         | HTML element. document.body by default.
     --------------------------------------------------------------------------
-     ondrawstart     | Handler for the event, firing when the module
-                     | rendering starts. Takes a DOM.Event object as the only
-                     | argument.
+     ondrawstart(event) | Handler for the event, firing when the module
+                         | rendering starts. Takes a DOM.Event object as
+                         | the only argument.
+                         |
+                         | event.detail property contains the following
+                         | properties and methods:
+                         | — id     — selected row id;
+                         | — hide() — hide module;
+                         | — show() — show module.
     --------------------------------------------------------------------------
-     ondropstart     | 
+     ondropstart(event) | Handler for the event, firing when user deselects
+                         | any row by mouse doubleclick or enter key.
+                         | Takes a DOM.Event object as the only argument.
+                         |
+                         | event.detail property contains the following
+                         | properties and methods:
+                         | — id     — selected row id;
+                         | — done() — finish process successful;
+                         | — fail() — finish process unsuccessful;
+                         | — hide() — hide module;
+                         | — show() — show module.
     --------------------------------------------------------------------------
-     onholdstart     | Handler for the event, firing when user selects any
-                     | row by mouse doubleclick or enter key. It can be used
-                     | to make any external actions, related to this action.
-                     | Takes a DOM.Event object as the only argument.
-                     |
-                     | event.detail property contains the following
-                     | properties and methods:
-                     | — id     — selected row ids, separated with commas;
-                     | — done() — runs the successful finish;
-                     | — fail() — runs the unsuccessful finish.
+     onholdstart(event) | Handler for the event, firing when user selects any
+                         | row by mouse doubleclick or enter key. Takes
+                         | a DOM.Event object as the only argument.
+                         |
+                         | event.detail property contains the following
+                         | properties and methods:
+                         | — id     — selected row id;
+                         | — done() — finish process successful;
+                         | — fail() — finish process unsuccessful;
+                         | — hide() — hide module;
+                         | — show() — show module.
     --------------------------------------------------------------------------
-     onloadstart     | Handler for the event, firing when the module instance
-                     | inits and need the data structure for the module DOM
-                     | building. Doesn't fire if .data property in arguments
-                     | has been given. Takes a DOM.Event object as the only
-                     | argument.
-                     |
-                     | event.detail property contains the following
-                     | properties and methods:
-                     | — done — runs the successfull finish;
-                     | — fail — runs the unsuccessful finish.
+     onloadstart(event) | Handler for the event, firing when user loads data.
+                         | Takes a DOM.Event object as the only argument.
+                         |
+                         | event.detail property contains the following
+                         | properties and methods:
+                         | — id     — selected row id;
+                         | — done() — finish process successful;
+                         | — fail() — finish process unsuccessful;
+                         | — hide() — hide module;
+                         | — show() — show module.
     --------------------------------------------------------------------------
-     onopenstart     | Handler for the event, firing when user put a visual
-                     | cursor on a row, and this row has a related content,
-                     | not loaded yet. Takes a DOM.Event object as the only
-                     | argument.
-                     |
-                     | event.detail property contains the following
-                     | properties and methods:                     
-                     | — id     — selected row id;
-                     | — done() — runs the successful finish, takes a html
-                     |            code string or an array with the rows data;
-                     | — fail() — runs the unsuccessful finish.
+     onopenstart(event) | Handler for the event, firing when user sets cursor
+                         | at the row by mouse click or keyboard keys. Takes
+                         | a DOM.Event object as the only argument.
+                         |
+                         | event.detail property contains the following
+                         | properties and methods:
+                         | — id     — selected row id;
+                         | — done() — finish process successful;
+                         | — fail() — finish process unsuccessful;
+                         | — hide() — hide module;
+                         | — show() — show module.
     --------------------------------------------------------------------------
-     ondrawfinish    | Handler for the event, firing when the module
-                     | rendering finishes. Takes a DOM.Event object as the
-                     | only argument.
+     ondrawfinish(event) | Handler for the event, firing when the module
+                         | rendering finishes. Takes a DOM.Event object as
+                         | the only argument.
+                         |
+                         | event.detail property contains the following
+                         | properties and methods:
+                         | — id     — selected row id;
+                         | — hide() — hide module;
+                         | — show() — show module.
     --------------------------------------------------------------------------
-     ondropfinish    | 
+     ondropfinish(event) | Handler for the event, firing when ondropstart
+                         | has been finished. Takes a DOM.Event object as
+                         | the only argument.
+                         |
+                         | event.detail property contains the following
+                         | properties and methods:
+                         | — id     — selected row id;
+                         | — hide() — hide module;
+                         | — show() — show module.
     --------------------------------------------------------------------------
-     onholdfinish    | Handler for the event, firing when all module actions,
-                     | related to the successful finishing of onholdstart
-                     | event. Takes a DOM.Event object as the only argument.
+     onholdfinish(event) | Handler for the event, firing when onholdstart
+                         | has been finished. Takes a DOM.Event object as
+                         | the only argument.
+                         |
+                         | event.detail property contains the following
+                         | properties and methods:
+                         | — id     — selected row id;
+                         | — hide() — hide module;
+                         | — show() — show module.
     --------------------------------------------------------------------------
-     onloadfinish    | Handler for the event, firing when all module actions,
-                     | related to the succesful finishing of onloadstart
-                     | event. Takes a DOM.Event object as the only argument.
+     onloadfinish(event) | Handler for the event, firing when onloadstart
+                         | has been finished. Takes a DOM.Event object as
+                         | the only argument.
+                         |
+                         | event.detail property contains the following
+                         | properties and methods:
+                         | — id     — selected row id;
+                         | — hide() — hide module;
+                         | — show() — show module.
     --------------------------------------------------------------------------
-     onopenfinish    | Handler for the event, firing when all module actions,
-                     | related to the successful finishing of onview event.
-                     | Takes a DOM.Event object as the only argument.
+     onopenfinish(event) | Handler for the event, firing when onloadstart
+                         | has been finished. Takes a DOM.Event object as
+                         | the only argument.
+                         |
+                         | event.detail property contains the following
+                         | properties and methods:
+                         | — id     — selected row id;
+                         | — hide() — hide module;
+                         | — show() — show module.
     ==========================================================================
 
 
@@ -139,54 +188,83 @@
 
     Instance methods (chaining available):
 
-     method          | value
+     method           | value
     ==========================================================================
-     back()          | Move cursor to the previous row.
+     back()           | Move cursor to the previous row.
     --------------------------------------------------------------------------
-     drop()          | Deselect the selected row (with mouse doubleclick or
-                     | enter keypress). Takes the following arguments:
-                     | — id — id of the row that should be selected (if not
-                              given, all selected rows will be deselected).
+     drop(id)         | Deselect the selected row (with mouse doubleclick or
+                      | enter keypress).
+                      |
+                      | Takes the following arguments:
+                      | — id — id of the row that should be selected (if not
+                      |        given, all selected rows will be deselected).
     --------------------------------------------------------------------------
-     fail()          | Default error handler.
+     hide()           | Hide instance window.
     --------------------------------------------------------------------------
-     hide()          | Hide instance window.
+     hold(id, add)    | Select the row by its id (like with mouse doubleclick
+                      | or enter keypress).
+                      |
+                      | Takes the following arguments:
+                      | — id  — id of the row that should be selected;
+                      | — add — true if there's no need to deselect
+                      |         previously selected rows and the hold_cls key
+                      |         in the args was set on true.
     --------------------------------------------------------------------------
-     hold()          | Select the row by its id (like with mouse doubleclick
-                     | or enter keypress). Takes the following arguments:
-                     | — id  — id of the row that should be selected;
-                     | — add — true if there's no need to deselect previously
-                     |         selected rows and the .multiple setting was
-                     |         set on true.
+     kill()           | Destroy an instance.
     --------------------------------------------------------------------------
-     kill()          | Destroy an instance.
+     load()           | Load main data structure.
     --------------------------------------------------------------------------
-     load()          | Load main data structure.
+     move()           | Scroll to the row, which has been focused before.
     --------------------------------------------------------------------------
-     move()          | Scroll to the row, which has been focused before.
+     next()           | Move cursor to the next row.
     --------------------------------------------------------------------------
-     next()          | Move cursor to the next row.
+     open(id)         | Set a cursor to the row and show all the subitems
+                      | related to it.
+                      |
+                      | Takes the following arguments:
+                      | — id — id of the row that should be focused.
     --------------------------------------------------------------------------
-     open()          | Set a cursor to the row and show all the subitems
-                     | related to it. Takes the following arguments:
-                     | — id — id of the row that should be focused.
+     pull(id, action) | Initiate an external action (to load data
+                      | for example).
+                      |
+                      | Takes the following arguments:
+                      | — id     — id of the row;
+                      | — action — action name (drop, hold, load, open).
     --------------------------------------------------------------------------
-     push()          | 
+     push(id, data)   | Add a row into the module structure.
+                      |
+                      | Takes the following arguments:
+                      | — id   — id of the parent row («-» if root);
+                      | — data — array with the row.
     --------------------------------------------------------------------------
-     pull()          | 
+     quit()           | Move cursor from the related items to the parent row.
     --------------------------------------------------------------------------
-     quit()          | Move cursor from the related items to the parent row.
+     show()           | Show instance window.
     --------------------------------------------------------------------------
-     show()          | Show instance window.
+     shut()           | Remove a cursor from the row and hide all the
+                      | subitems related to it.
     --------------------------------------------------------------------------
-     shut()          | Remove a cursor from the row and hide all the subitems
-                     | related to it.
+     step()           | Move cursor from the parent row to the related items.
+    ==========================================================================
+
+
+
+    Row data:
+
+    It should be html string or array with the row data objects of the
+    following structure.
+
+     key             | value
+    ==========================================================================
+     dead            | True if this row should be disabled.
     --------------------------------------------------------------------------
-     step()          | Move cursor from the parent row to the related items.
+     id              | Row id.
     --------------------------------------------------------------------------
-     wait()          | Turn on or off the progressbar. Takes the following
-                     | arguments:
-                     | — alias — name of the action that inited the
-                     |           progressbar, if nothing given, hides the
-                     |           progressbar.
+     name            | Row title.
+    --------------------------------------------------------------------------
+     seek            | Row search index string. If not given it will
+                     | autofilled with the row title in lowercase.
+    --------------------------------------------------------------------------
+     data            | Array of the children rows objects with the similar
+                     | structure.
     ==========================================================================
