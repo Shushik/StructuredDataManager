@@ -33,10 +33,12 @@ var SDM = SDM || (function() {
             this.id = typeof args.id == 'string' ? args.id : self.prototype.id + '';
             self[this.id] = this;
 
-            // Init modules
+            // Init module
             this.init(args);
+
+            // Init submodules
             this.gui    = self.Gui(this.args);
-            this.events = self.Events(this.gui.root, args);
+            this.events = self.Events(this.gui.root, this.events);
 
             // Set mousedown event
             this.events.sub('mousedown', this._binded.live);
@@ -72,7 +74,6 @@ var SDM = SDM || (function() {
      * @property id
      * @property gui
      * @property args
-     * @property mode
      * @property events
      * @property holded
      * @property opened
@@ -122,12 +123,6 @@ var SDM = SDM || (function() {
          * @type {string}
          */
         _queue : '',
-        /**
-         * Instance workflow mode
-         *
-         * @type {string}
-         */
-        mode : '',
         /**
          * Selected rows ids
          *
@@ -587,19 +582,19 @@ var SDM = SDM || (function() {
          */
         init : function(args) {
             var
-                al0 = '',
-                al1 = '',
-                al2 = '',
-                tm0 = null,
-                tm1 = {drop : 5, hold : 5, load : 5, open : 5};
+                al0     = '',
+                event   = '',
+                limit   = '',
+                ttls    = {drop : 5, find : 5, hold : 5, load : 5, open : 5},
+                wrapper = null;
 
-            // Try to fetch the 
+            // Try to fetch the wrapper DOM node
             if (args.wrapper instanceof HTMLElement) {
-                tm0 = args.wrapper;
+                wrapper = args.wrapper;
             } else if (typeof args.wrapper == 'string') {
-                tm0 = self.document.querySelector(args.wrapper);
+                wrapper = self.document.querySelector(args.wrapper);
             } else {
-                tm0 = self.document.body;
+                wrapper = self.document.body;
             }
 
             // Reset ids, indicators and stacks
@@ -621,19 +616,24 @@ var SDM = SDM || (function() {
                            'Ctrl + double click — multi select or Cmd + double click; ' +
                            'Esc — close',
                 name_txt : args.name_txt ? args.name_txt + '' : '',
-                wrapper  : tm0
+                wrapper  : wrapper
             };
 
+            // 
+            this.events = {};
+
             // Save time limits for main events
-            for (al0 in tm1) {
-                al1 = 'on' + al0 + 'start';
-                al2 = al0 + '_ttl';
+            for (al0 in ttls) {
+                event = 'on' + al0 + 'start';
+                limit = al0 + '_ttl';
 
                 // Check if the start event handler is set
-                if (typeof args[al1] == 'function') {
-                    this.args[al2] = args[al2] > tm1[al0] ?
-                                     args[al2] :
-                                     tm1[al0];
+                if (typeof args[event] == 'function') {
+                    this.args[limit] = args[limit] > ttls[al0] ?
+                                       args[limit] :
+                                       ttls[al0];
+
+                    this.events[event] = args[event];
                 }
             }
 

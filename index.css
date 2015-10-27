@@ -331,7 +331,7 @@
     display: none;
 }
 
-.sdm__col:first-child .sdm__rows,
+.sdm__col:first-child .sdm__rows[data-id="-"],
 .sdm__rows_are_opened
 {
     display: block;
