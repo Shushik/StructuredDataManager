@@ -140,7 +140,7 @@
     right:    30%;
     left:     30%;
 
-    overflow:  hidden;
+    overflow: hidden;
 
     color: #777;
 
@@ -160,19 +160,26 @@
 {
     font-size: 10px;
 
-    line-height: 12px;
+    line-height:   12px;
+    text-overflow: ellipsis;
+    white-space:   nowrap;
 
     cursor:   default;
     position: absolute;
-    right:    0;
+    right:    3px;
     bottom:   3px;
-    left:     0;
+    left:     3px;
 
-    color: #777;
+    overflow: hidden;
 
     -webkit-user-select: none;
     -moz-user-select:    none;
     user-select:         none;
+}
+
+.sdm__hint:before
+{
+    content: attr(title);
 }
 
 
@@ -273,7 +280,7 @@
 }
 
 .sdm__col:first-child,
-.sdm__col_is_viewed
+.sdm__col_is_opened
 {
     display: inline-block;
 }
@@ -283,36 +290,36 @@
     border-right-width: 0;
 }
 
-.sdm__cols[data-cols="2"] .sdm__col:nth-child(1):last-child,
-.sdm__cols[data-cols="3"] .sdm__col:nth-child(1):last-child,
-.sdm__cols[data-cols="3"] .sdm__col:nth-child(2):last-child,
-.sdm__cols[data-cols="4"] .sdm__col:nth-child(1):last-child,
-.sdm__cols[data-cols="4"] .sdm__col:nth-child(2):last-child,
-.sdm__cols[data-cols="4"] .sdm__col:nth-child(3):last-child,
-.sdm__cols[data-cols="5"] .sdm__col:nth-child(1):last-child,
-.sdm__cols[data-cols="5"] .sdm__col:nth-child(2):last-child,
-.sdm__cols[data-cols="5"] .sdm__col:nth-child(3):last-child,
-.sdm__cols[data-cols="5"] .sdm__col:nth-child(4):last-child
+.sdm__cols[data-limit="2"] .sdm__col:nth-child(1):last-child,
+.sdm__cols[data-limit="3"] .sdm__col:nth-child(1):last-child,
+.sdm__cols[data-limit="3"] .sdm__col:nth-child(2):last-child,
+.sdm__cols[data-limit="4"] .sdm__col:nth-child(1):last-child,
+.sdm__cols[data-limit="4"] .sdm__col:nth-child(2):last-child,
+.sdm__cols[data-limit="4"] .sdm__col:nth-child(3):last-child,
+.sdm__cols[data-limit="5"] .sdm__col:nth-child(1):last-child,
+.sdm__cols[data-limit="5"] .sdm__col:nth-child(2):last-child,
+.sdm__cols[data-limit="5"] .sdm__col:nth-child(3):last-child,
+.sdm__cols[data-limit="5"] .sdm__col:nth-child(4):last-child
 {
     border-right-width: 1px;
 }
 
-.sdm__cols[data-cols="3"] .sdm__col
+.sdm__cols[data-limit="3"] .sdm__col
 {
     width: 33.3%;
 }
 
-.sdm__cols[data-cols="3"] .sdm__col:first-child
+.sdm__cols[data-limit="3"] .sdm__col:first-child
 {
     width: 33.4%;
 }
 
-.sdm__cols[data-cols="4"] .sdm__col
+.sdm__cols[data-limit="4"] .sdm__col
 {
     width: 25%;
 }
 
-.sdm__cols[data-cols="5"] .sdm__col
+.sdm__cols[data-limit="5"] .sdm__col
 {
     width: 20%;
 }
@@ -325,7 +332,7 @@
 }
 
 .sdm__col:first-child .sdm__rows,
-.sdm__rows_are_viewed
+.sdm__rows_are_opened
 {
     display: block;
 }
@@ -362,8 +369,23 @@
     overflow:  hidden;
 }
 
-.sdm__row[data-type="list"]:after,
-.sdm__row[data-type="load"]:after
+.sdm__row_is_opened,
+.sdm__row_is_opened:nth-child(odd)
+{
+    -webkit-box-shadow: inset 0 0 0 1px #CDCDCD;
+    -moz-box-shadow:    inset 0 0 0 1px #CDCDCD;
+    box-shadow:         inset 0 0 0 1px #CDCDCD;
+}
+
+.sdm__row_is_holded,
+.sdm__row_is_holded:nth-child(odd)
+{
+    background: #CDCDCD;
+}
+
+.sdm__row_data_load:after,
+.sdm__row_data_rows:after,
+.sdm__row_data_loading:after
 {
     font-size:   16px;
     font-family: Times, serif;
@@ -378,39 +400,26 @@
     padding: inherit;
 }
 
-.sdm__row[data-type="list"]:after
+.sdm__row_data_rows:after
 {
     content:  "›";
 }
 
-.sdm__row[data-type="load"]:after
+.sdm__row_data_load:after,
+.sdm__row_data_loading:after
 {
     content:  "⌚";
 }
 
-.sdm__row_is_viewed,
-.sdm__row_is_viewed:nth-child(odd)
-{
-    -webkit-box-shadow: inset 0 0 0 1px #CDCDCD;
-    -moz-box-shadow:    inset 0 0 0 1px #CDCDCD;
-    box-shadow:         inset 0 0 0 1px #CDCDCD;
-}
-
-.sdm__row_is_holded,
-.sdm__row_is_holded:nth-child(odd)
-{
-    background: #CDCDCD;
-}
-
-.sdm__row_is_dead
+.sdm__row_data_dead
 {
     cursor: default;
 
     color: #CCCCCC;
 }
 
-.sdm__row_is_dead.sdm__row[data-type="list"]:after,
-.sdm__row_is_dead.sdm__row[data-type="load"]:after
+.sdm__row_data_dead.sdm__row_data_load:after,
+.sdm__row_data_dead.sdm__row_data_rows:after
 {
     content: "";
 }

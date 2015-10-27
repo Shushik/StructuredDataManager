@@ -25,19 +25,12 @@
 
      alias           | value
     ==========================================================================
-     id              | SDM instance id. This instance could be found after
-                     | the initiation by StructuredDataManager[id].
-    --------------------------------------------------------------------------
-     data            | An object with the items structure.
-    --------------------------------------------------------------------------
-     wrapper         | String with the CSS path or DOM node for the wrapper
-                     | HTML element. document.body by default.
+     hold_cls        | True if multiselect is allowed.
     --------------------------------------------------------------------------
      cols_num        | Number of columns visible in frame (2—5).
     --------------------------------------------------------------------------
-     hide_txt        | Hide controll title text.
-    --------------------------------------------------------------------------
-     hint_txt        | Bottom hint text.
+     drop_ttl        | Number of seconds Finder will wait for the row
+                     | holding success.
     --------------------------------------------------------------------------
      hold_ttl        | Number of seconds Finder will wait for the row
                      | holding success.
@@ -45,12 +38,26 @@
      load_ttl        | Number of seconds Finder will wait for the data
                      | loading success.
     --------------------------------------------------------------------------
-     name_txt        | Title text.
-    --------------------------------------------------------------------------
      view_ttl        | Number of seconds Finder will wait for the row
                      | viewing success.
     --------------------------------------------------------------------------
-     multiple        | True if multiselect is allowed.
+     id              | SDM instance id. This instance could be found after
+                     | the initiation by StructuredDataManager[id].
+    --------------------------------------------------------------------------
+     name_txt        | Title text.
+    --------------------------------------------------------------------------
+     hide_txt        | Hide controll title text.
+    --------------------------------------------------------------------------
+     hint_txt        | Bottom hint text.
+    --------------------------------------------------------------------------
+     wrapper         | String with the CSS path or DOM node for the wrapper
+                     | HTML element. document.body by default.
+    --------------------------------------------------------------------------
+     ondrawstart     | Handler for the event, firing when the module
+                     | rendering starts. Takes a DOM.Event object as the only
+                     | argument.
+    --------------------------------------------------------------------------
+     ondropstart     | 
     --------------------------------------------------------------------------
      onholdstart     | Handler for the event, firing when user selects any
                      | row by mouse doubleclick or enter key. It can be used
@@ -74,7 +81,7 @@
                      | — done — runs the successfull finish;
                      | — fail — runs the unsuccessful finish.
     --------------------------------------------------------------------------
-     onviewstart     | Handler for the event, firing when user put a visual
+     onopenstart     | Handler for the event, firing when user put a visual
                      | cursor on a row, and this row has a related content,
                      | not loaded yet. Takes a DOM.Event object as the only
                      | argument.
@@ -86,6 +93,12 @@
                      |            code string or an array with the rows data;
                      | — fail() — runs the unsuccessful finish.
     --------------------------------------------------------------------------
+     ondrawfinish    | Handler for the event, firing when the module
+                     | rendering finishes. Takes a DOM.Event object as the
+                     | only argument.
+    --------------------------------------------------------------------------
+     ondropfinish    | 
+    --------------------------------------------------------------------------
      onholdfinish    | Handler for the event, firing when all module actions,
                      | related to the successful finishing of onholdstart
                      | event. Takes a DOM.Event object as the only argument.
@@ -94,17 +107,9 @@
                      | related to the succesful finishing of onloadstart
                      | event. Takes a DOM.Event object as the only argument.
     --------------------------------------------------------------------------
-     onviewfinish    | Handler for the event, firing when all module actions,
+     onopenfinish    | Handler for the event, firing when all module actions,
                      | related to the successful finishing of onview event.
                      | Takes a DOM.Event object as the only argument.
-    --------------------------------------------------------------------------
-     onrenderstart   | Handler for the event, firing when the module
-                     | rendering starts. Takes a DOM.Event object as the only
-                     | argument.
-    --------------------------------------------------------------------------
-     onrenderfinish  | Handler for the event, firing when the module
-                     | rendering finishes. Takes a DOM.Event object as the
-                     | only argument.
     ==========================================================================
 
 
@@ -115,15 +120,21 @@
     ==========================================================================
      id              | Instance id.
     --------------------------------------------------------------------------
-     mode            | One of two possible modes: observe or search
+     gui             | 
+    --------------------------------------------------------------------------
+     args            | Parsed and cleaned user arguments.
+    --------------------------------------------------------------------------
+     mode            | One of two possible modes: observe or search.
+    --------------------------------------------------------------------------
+     events          | 
     --------------------------------------------------------------------------
      holded          | Ids of rows which have been selected by mouse
                      | doubleclick or enter keypress, separated with the
                      | comma.
     --------------------------------------------------------------------------
-     viewed          | Row which has been focused by mouse singleclick.
+     opened          | Row which has been focused by mouse singleclick.
     --------------------------------------------------------------------------
-     waiting         | Alias of the waiting module action.
+     pulling         | 
     ==========================================================================
 
 
@@ -140,11 +151,6 @@
                               given, all selected rows will be deselected).
     --------------------------------------------------------------------------
      fail()          | Default error handler.
-    --------------------------------------------------------------------------
-     free()          | Remove a cursor from the row and hide all the subitems
-                     | related to it.
-    --------------------------------------------------------------------------
-     goin()          | Move cursor from the parent row to the related items.
     --------------------------------------------------------------------------
      hide()          | Hide instance window.
     --------------------------------------------------------------------------
@@ -163,13 +169,22 @@
     --------------------------------------------------------------------------
      next()          | Move cursor to the next row.
     --------------------------------------------------------------------------
+     open()          | Set a cursor to the row and show all the subitems
+                     | related to it. Takes the following arguments:
+                     | — id — id of the row that should be focused.
+    --------------------------------------------------------------------------
+     push()          | 
+    --------------------------------------------------------------------------
+     pull()          | 
+    --------------------------------------------------------------------------
      quit()          | Move cursor from the related items to the parent row.
     --------------------------------------------------------------------------
      show()          | Show instance window.
     --------------------------------------------------------------------------
-     view()          | Set a cursor to the row and show all the subitems
-                     | related to it. Takes the following arguments:
-                     | — id — id of the row that should be focused.
+     shut()          | Remove a cursor from the row and hide all the subitems
+                     | related to it.
+    --------------------------------------------------------------------------
+     step()          | Move cursor from the parent row to the related items.
     --------------------------------------------------------------------------
      wait()          | Turn on or off the progressbar. Takes the following
                      | arguments:
