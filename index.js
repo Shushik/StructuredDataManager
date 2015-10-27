@@ -13,7 +13,7 @@ var SDM = SDM || (function() {
      * @property parent
      * @property document
      * @function Gui
-     * @property Log
+     * @function Log
      * @function Events
      *
      * @param {object} args
