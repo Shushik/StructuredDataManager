@@ -63,8 +63,8 @@
                          | — hide() — hide module;
                          | — show() — show module.
     --------------------------------------------------------------------------
-     onholdstart(event)  | Handler for the event, firing when user selects any
-                         | row by mouse doubleclick or enter key. Takes
+     onholdstart(event)  | Handler for the event, firing when user selects
+                         | any row by mouse doubleclick or enter key. Takes
                          | a DOM.Event object as the only argument.
                          |
                          | event.detail property contains the following
@@ -75,20 +75,21 @@
                          | — hide() — hide module;
                          | — show() — show module.
     --------------------------------------------------------------------------
-     onloadstart(event)  | Handler for the event, firing when user loads data.
+     onloadstart(event)  | Handler for the event, firing when user loads
+                         | data. Takes a DOM.Event object as the only
+                         | argument.
+                         |
+                         | event.detail property contains the following
+                         | properties and methods:
+                         | — id     — selected row id;
+                         | — done() — finish process successful;
+                         | — fail() — finish process unsuccessful;
+                         | — hide() — hide module;
+                         | — show() — show module.
+    --------------------------------------------------------------------------
+     onopenstart(event)  | Handler for the event, firing when user sets
+                         | cursor at the row by mouse click or keyboard keys.
                          | Takes a DOM.Event object as the only argument.
-                         |
-                         | event.detail property contains the following
-                         | properties and methods:
-                         | — id     — selected row id;
-                         | — done() — finish process successful;
-                         | — fail() — finish process unsuccessful;
-                         | — hide() — hide module;
-                         | — show() — show module.
-    --------------------------------------------------------------------------
-     onopenstart(event)  | Handler for the event, firing when user sets cursor
-                         | at the row by mouse click or keyboard keys. Takes
-                         | a DOM.Event object as the only argument.
                          |
                          | event.detail property contains the following
                          | properties and methods:
