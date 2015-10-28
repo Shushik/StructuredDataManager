@@ -1220,7 +1220,7 @@ SDM.Gui = SDM.Gui || (function() {
             this.root.className = this.root.className.
                                   replace(new RegExp(
                                       '\\ssdm_mode_(' +
-                                      this.mode.replace(/,/, '|') +
+                                      this.mode.replace(/;/, '|') +
                                       ')',
                                       'g'
                                   ), '');
