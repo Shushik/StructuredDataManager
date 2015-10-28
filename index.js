@@ -4,6 +4,8 @@
  * @page    https://github.com/Shushik/StructuredDataManager
  * @author  Shushik <silkleopard@yandex.ru>
  * @version 2.0
+ *
+ * @todo Add the row data object fields schema
  */
 var SDM = SDM || (function() {
 
@@ -13,7 +15,6 @@ var SDM = SDM || (function() {
      * @property parent
      * @property document
      * @function Gui
-     * @function Log
      * @function Events
      *
      * @param {object} args
@@ -37,15 +38,17 @@ var SDM = SDM || (function() {
             this.init(args);
 
             // Init submodules
-            this.gui    = self.Gui(this.args);
-            this.events = self.Events(this.gui.root, this.events);
+            this.gui    = self.Gui(args);
+            this.events = self.Events(this.gui.root, args);
 
             // Set mousedown event
             this.events.sub('mousedown', this._binded.live);
 
             // Load data for the root column
-            if (this.args.load_ttl) {
-                this.load();
+            if (args.onloadstart) {
+                this.pull('-', 'load');
+            } else if (args.data) {
+                this.push('-', args.data);
             }
         }
 
@@ -68,12 +71,11 @@ var SDM = SDM || (function() {
     self.document = this.document;
 
     /**
-     * @property _queue
+     * @property _mouse
      * @property _binded
-     * @property _timers
+     * @property _delayed
      * @property id
      * @property gui
-     * @property args
      * @property events
      * @property holded
      * @property opened
@@ -91,7 +93,6 @@ var SDM = SDM || (function() {
      * @function hold
      * @function init
      * @function kill
-     * @function load
      * @function move
      * @function next
      * @function open
@@ -110,6 +111,12 @@ var SDM = SDM || (function() {
          */
         pulling : false,
         /**
+         * Mouse timer id
+         *
+         * @type {number}
+         */
+        _mouse : 0,
+        /**
          * Instance id
          *
          * @type {number}
@@ -122,7 +129,7 @@ var SDM = SDM || (function() {
          *
          * @type {string}
          */
-        _queue : '',
+        _delayed : '',
         /**
          * Selected rows ids
          *
@@ -144,25 +151,11 @@ var SDM = SDM || (function() {
          */
         _binded : null,
         /**
-         * Timers ids stack
-         *
-         * @private
-         *
-         * @type {object}
-         */
-        _timers : null,
-        /**
          * Gui operations module instance
          *
          * @type {object}
          */
         gui : null,
-        /**
-         * Initial arguments stack
-         *
-         * @type {object}
-         */
-        args : null,
         /**
          * Events operations module instance
          *
@@ -212,98 +205,88 @@ var SDM = SDM || (function() {
          */
         _pull : function() {
             var
-                id   = '',
-                what = '',
-                args = null;
+                id     = '',
+                action = '',
+                args   = null;
 
             // Get the id and action alias
             if (
-                (what = this._queue.split(/;/)) &&
-                what.length &&
-                (what = what[0].split(':'))
+                (action = this._delayed.split(/;/)) &&
+                action.length &&
+                (action = action[0].split(':'))
             ) {
-                id   = what[0];
-                what = what[1];
+                id     = action[0];
+                action = action[1];
             } else {
                 return;
             }
 
-            if (this.args[what + '_ttl']) {
-                // Set a timeout for a waiting action
-                if (this.args[what + '_ttl']) {
-                    this._timers.pull = self.parent.setTimeout(
-                        this._binded.failed,
-                        this.args[what + '_ttl'] * 1000
-                    );
-                }
+            // Set the pulling process indicator
+            this.pulling = true;
 
-                // Turn the progress bar off
-                this.gui.wait(true);
+            // Turn the progress bar on
+            this.gui.wait();
 
-                // Set the pulling process indicator
-                this.pulling = true;
-
-                // Create the event arguments event
-                args = {
-                    id   : id,
-                    done : this._binded.pulled,
-                    fail : this._binded.failed,
-                    hide : this._binded.hide,
-                    show : this._binded.show
-                }
-
-                // Tell subscribers the action has been started
-                this.events.pub(what + 'start', args);
-            } else if (this['_' + what + 'ed']) {
-                this['_' + what + 'ed']();
-            }
+            // Set the timer for the start event
+            this.events.wait(action + 'start', {
+                id   : id,
+                done : this._binded.pulled,
+                fail : this._binded.failed,
+                hide : this._binded.hide,
+                show : this._binded.show
+            });
         },
         /**
          * Common error handler
          *
          * @param {undefined|string} text
-         *
-         * @return {object}
          */
         _failed : function(text) {
             var
-                id    = '',
-                what  = '',
-                row   = null,
-                queue = null;
+                id     = '',
+                action = '',
+                row    = null,
+                queue  = null;
 
-            if (
+            if ((
                 this.pulling &&
-                (queue = this._queue.split(/;/)) &&
+                (queue = this._delayed.split(/;/)) &&
                 queue.length &&
-                (what = queue.shift().split(':'))
-            ) {
+                (action = queue.shift().split(':'))
+            )) {
                 // Get the id and action alias
-                id   = what[0];
-                what = what[1];
+                id     = action[0];
+                action = action[1];
 
-                // Clear the timer
-                self.parent.clearTimeout(this._timers.pull)
-                this._timers.pull = undefined;
+                // Reset the timer for the start event
+                this.events.halt(action + 'start');
+    
+                // Turn the progress bar off
+                this.gui.halt();
+
+                // Reset the pulling process indicator
+                this.pulling = false;
 
                 // Update the queue
-                this._queue = queue.join(';');
+                this._delayed = queue.join(';');
 
                 // Tell subscribers the action has been finished
-                this.events.pub((what + 'finish'), {
+                this.events.pub((action + 'fail'), {
                     id   : id,
                     hide : this._binded.hide,
                     show : this._binded.show
                 });
 
-                // Turn the progress bar off
-                this.gui.wait(false);
+                // Remove loading class
+                if (row = this.gui.rows[id]) {
+                    row.className = row.className.replace(
+                        /sdm__row_data_loading/,
+                        'sdm__row_data_dead'
+                    );
+                }
 
-                // Reset the pulling process indicator
-                this.pulling = false;
-
-                // 
-                if (what == 'hold') {
+                // Deselect row
+                if (action.indexOf('hold') > -1) {
                     this.drop(id);
                 }
 
@@ -312,11 +295,6 @@ var SDM = SDM || (function() {
                     this._pull();
                 }
             }
-
-            // Throw an error message
-            self.Log(text);
-
-            return this;
         },
         /**
          * Finish the data loading process
@@ -327,48 +305,47 @@ var SDM = SDM || (function() {
          */
         _pulled : function(data) {
             var
-                id    = '',
-                what  = '',
-                queue = null;
+                id     = '',
+                action = '',
+                queue  = null;
 
             if ((
                 this.pulling &&
-                (queue = this._queue.split(/;/)) &&
+                (queue = this._delayed.split(/;/)) &&
                 queue.length &&
-                (what = queue.shift().split(':'))
+                (action = queue.shift().split(':'))
             )) {
                 // Get the id and action alias
-                id   = what[0];
-                what = what[1];
+                id     = action[0];
+                action = action[1];
 
-                // Clear the timer
-                self.parent.clearTimeout(this._timers.pull)
-                this._timers.pull = undefined;
+                // Reset the timer for the start event
+                this.events.halt(action + 'start');
+
+                // Turn the progress bar off
+                this.gui.halt();
+
+                // Reset the pulling process indicator
+                this.pulling = false;
 
                 // Update the queue
-                this._queue = queue.join(';');
+                this._delayed = queue.join(';');
 
                 // Tell subscribers the action has been finished
-                this.events.pub((what + 'finish'), {
+                this.events.pub((action + 'finish'), {
                     id   : id,
                     hide : this._binded.hide,
                     show : this._binded.show
                 });
 
-                // Turn the progress bar off
-                this.gui.wait(false);
-
-                // Reset the pulling process indicator
-                this.pulling = false;
-
                 // Add the rows
-                if (what != 'hold' && data) {
+                if (action.indexOf('hold') == -1 && data) {
                     this.push(id, data);
                 }
 
-                // Run the attached finishing action
-                if (this['_' + what + 'ed']) {
-                    this['_' + what + 'ed']();
+                // Run the related finishing action
+                if (this['_' + action + 'ed']) {
+                    this['_' + action + 'ed']();
                 }
 
                 // Load next item in queue
@@ -440,10 +417,10 @@ var SDM = SDM || (function() {
             switch (event.part) {
                 // 
                 case 'row':
-                    if (this._timers.open) {
+                    if (this._mouse) {
                         // Cancel the cursor set
-                        self.parent.clearTimeout(this._timers.open);
-                        this._timers.open = undefined;
+                        self.parent.clearTimeout(this._mouse);
+                        this._mouse = 0;
 
                         // Select a row
                         this.hold(this.opened, event.ctrl);
@@ -455,7 +432,7 @@ var SDM = SDM || (function() {
                     this.opened = event.node.getAttribute('data-id');
 
                     // Delay the cursor set
-                    this._timers.open = self.parent.setTimeout(
+                    this._mouse = self.parent.setTimeout(
                         this._binded.open,
                         150
                     );
@@ -581,61 +558,13 @@ var SDM = SDM || (function() {
          * @return {object}
          */
         init : function(args) {
-            var
-                al0     = '',
-                event   = '',
-                limit   = '',
-                ttls    = {drop : 5, find : 5, hold : 5, load : 5, open : 5},
-                wrapper = null;
-
-            // Try to fetch the wrapper DOM node
-            if (args.wrapper instanceof HTMLElement) {
-                wrapper = args.wrapper;
-            } else if (typeof args.wrapper == 'string') {
-                wrapper = self.document.querySelector(args.wrapper);
-            } else {
-                wrapper = self.document.body;
-            }
-
             // Reset ids, indicators and stacks
-            this.pulling = false;
-            this._queue  = '';
-            this.holded  = '';
-            this.opened  = '';
-            this._events = [];
-            this._timers = {};
-
-            // Parse, filter and save given arguments
-            this.args = {
-                hold_cls : args.hold_cls ? true : false,
-                cols_num : args.cols_num > 1 && args.cols_num < 6 ? args.cols_num : 3,
-                hide_txt : args.hide_txt ? args.hide_txt + '' : '',
-                hint_txt : args.hint_txt ?
-                           args.hint_txt + '' :
-                           'Single click — expand; double click — select; ' +
-                           'Ctrl + double click — multi select or Cmd + double click; ' +
-                           'Esc — close',
-                name_txt : args.name_txt ? args.name_txt + '' : '',
-                wrapper  : wrapper
-            };
-
-            // 
-            this.events = {};
-
-            // Save time limits for main events
-            for (al0 in ttls) {
-                event = 'on' + al0 + 'start';
-                limit = al0 + '_ttl';
-
-                // Check if the start event handler is set
-                if (typeof args[event] == 'function') {
-                    this.args[limit] = args[limit] > ttls[al0] ?
-                                       args[limit] :
-                                       ttls[al0];
-
-                    this.events[event] = args[event];
-                }
-            }
+            this.pulling  = false;
+            this._mouse   = 0;
+            this._delayed = '';
+            this.holded   = '';
+            this.opened   = '';
+            this.events   = {};
 
             // Create the proxied methods links stack
             this._binded = {
@@ -666,14 +595,6 @@ var SDM = SDM || (function() {
 
             this._binded = null;
 
-            // Clear timers
-            for (al0 in this._timers) {
-                self.parent.clearTimeout(this._timers[al0]);
-                this._timers[al0] = undefined;
-            }
-
-            this._timers = null;
-
             // Clear events
             this.events.kill();
 
@@ -684,19 +605,15 @@ var SDM = SDM || (function() {
             self[this.id] = null;
         },
         /**
-         * Load the initial rows data
-         */
-        load : function() {
-            if (!this.gui.cols.length) {
-                this.pull('-', 'load');
-            }
-        },
-        /**
          * Scroll to the chosen column
          *
          * @private
+         *
+         * @param {number} mouse
+         *
+         * @return {object}
          */
-        move : function() {
+        move : function(mouse) {
             var
                 col = null,
                 row = this.gui.rows[this.opened];
@@ -704,16 +621,17 @@ var SDM = SDM || (function() {
             if (row) {
                 // Get the previous or the current column
                 col = row.parentNode.parentNode;
+
+                // Don't make a vertical scroll on click
+                if (!mouse) {
+                    col.scrollTop = row.offsetTop;
+                }
+
                 col = col.previousSibling ? col.previousSibling : col;
-
-                // Horisontal scrolling
-                col.parentNode.scrollLeft = 0;
                 col.parentNode.scrollLeft = col.offsetLeft;
-
-                // Vertical scrolling
-                row.parentNode.scrollTop = 0;
-                row.parentNode.scrollTop = row.offsetTop;
             }
+
+            return this;
         },
         /**
          * Set a visual cursor to the next row
@@ -749,9 +667,6 @@ var SDM = SDM || (function() {
             var
                 col = null,
                 row = null;
-
-            // Remove mousedown timer id
-            this._timers.open = undefined;
 
             // Set the current row id
             if (typeof id == 'string') {
@@ -797,7 +712,10 @@ var SDM = SDM || (function() {
             }
 
             // Scroll to the chosen column
-            this.move();
+            this.move(this._mouse);
+
+            // Remove mousedown timer id
+            this._mouse = 0;
 
             return this;
         },
@@ -816,18 +734,14 @@ var SDM = SDM || (function() {
                 return this;
             }
 
-            if (this.args[action + '_ttl']) {
-                // Save the row id and process name into queue stack
-                if (!this._queue.match(new RegExp('(^|;)' + id + ':' + action))) {
-                    this._queue += (this._queue ? ';' : '') + id + ':' + action;
-                }
+            // Save the row id and process name into queue stack
+            if (!this._delayed.match(new RegExp('(^|;)' + id + ':' + action))) {
+                this._delayed += (this._delayed ? ';' : '') + id + ':' + action;
+            }
 
-                // Try to run the first element in stack
-                if (!this.pulling) {
-                    this._pull();
-                }
-            } else if (this['_' + what + 'ed']) {
-                this['_' + action + 'ed']();
+            // Try to run the first element in stack
+            if (!this.pulling) {
+                this._pull();
             }
 
             return this;
@@ -943,6 +857,8 @@ var SDM = SDM || (function() {
         },
         /**
          * Set the visual cursor to the first child row
+         *
+         * @return {object}
          */
         step : function() {
             var
@@ -989,7 +905,19 @@ SDM.Gui = SDM.Gui || (function() {
             }
 
             var
+                part  = '',
+                node  = args.wrapper,
+                attrs = null,
+                parts = ['name', 'wait', 'hide', 'hint'];
+
+            // Try to fetch the wrapper DOM node
+            if (args.wrapper instanceof HTMLElement) {
                 node = args.wrapper;
+            } else if (typeof args.wrapper == 'string') {
+                node = self.document.querySelector(args.wrapper);
+            } else {
+                node = self.parent.document.body;
+            }
 
             // DOM root
             node = this.root = self.create({
@@ -1001,35 +929,30 @@ SDM.Gui = SDM.Gui || (function() {
                 className : 'sdm__unit'
             }, node);
 
-            // Name text
-            self.create({
-                title     : args.name_txt,
-                className : 'sdm__name'
-            }, node);
+            // Create text nodes
+            while (part = parts.shift()) {
+                attrs = {className : 'sdm__' + part};
 
-            // Name text
-            self.create({
-                title     : args.name_txt,
-                className : 'sdm__wait'
-            }, node);
+                if (typeof args[part + '_txt'] == 'string') {
+                    attrs.title = args[part + '_txt'];
+                } else if (part == 'hint') {
+                    attrs.title = 'Single click — expand; double click — select; ' +
+                                  'Ctrl + double click — multi select or Cmd + double click; ' +
+                                  'Esc — close'
+                }
 
-            // Hide control
-            self.create({
-                title     : args.hide_txt,
-                className : 'sdm__hide'
-            }, node);
-
-            // Hint text
-            self.create({
-                title     : args.hint_txt,
-                className : 'sdm__hint'
-            }, node);
+                self.create(attrs, node);
+            }
 
             // Columns stack
             this.cols = [];
             this.cols['..'] = self.create({
                 className : 'sdm__cols',
-                data      : {limit : args.cols_num}
+                data      : {
+                                limit : typeof args.cols_num == 'number' ?
+                                args.cols_num :
+                                3
+                            }
             }, node);
 
             // Rows and groups stack
@@ -1103,6 +1026,7 @@ SDM.Gui = SDM.Gui || (function() {
      * @function _row
      * @function push
      * @function find
+     * @function halt
      * @function hide
      * @function turn
      * @function show
@@ -1114,7 +1038,7 @@ SDM.Gui = SDM.Gui || (function() {
          *
          * @type {string}
          */
-        mode : 'search,observe',
+        mode : 'search;observe',
         /**
          * Stack of created cols and cols wrapper
          *
@@ -1274,10 +1198,6 @@ SDM.Gui = SDM.Gui || (function() {
                         parent.className += ' sdm__row_data_load';
                     }
                 break;
-                // Throw an error message
-                default:
-                    self.parent.Log('Data should be String or Array');
-                break;
             }
         },
         /**
@@ -1285,6 +1205,13 @@ SDM.Gui = SDM.Gui || (function() {
          */
         find : function() {
             this.turn('search');
+        },
+        /**
+         * Hide progressbar
+         */
+        halt : function() {
+            this.root.className = this.root.className.
+                                  replace(/\s*sdm_is_waiting/, '');
         },
         /**
          * Hide Gui window
@@ -1319,78 +1246,12 @@ SDM.Gui = SDM.Gui || (function() {
             this.turn('observe');
         },
         /**
-         * Show or hide progressbar
-         *
-         * @param {boolean} won
+         * Show progressbar
          */
-        wait : function(won) {
-            var
-                ch0 = this.root.className.indexOf('_is_waiting') != -1 ? true : false;
-
-            if (won && !ch0) {
-                this.root.className += ' sdm_is_waiting';
-            } else if (ch0) {
-                this.root.className = this.root.className.
-                                      replace(/\s*sdm_is_waiting/, '');
-            }
+        wait : function() {
+            this.root.className += ' sdm_is_waiting';
         }
     };
-
-    return self;
-
-}).call(SDM);
-
-
-
-/**
- * Common tools
- */
-SDM.Log = SDM.Log || (function() {
-
-    /**
-     * @static
-     *
-     * @property dev
-     * @property list
-     * @property parent
-     *
-     * @param {string} text
-     */
-    function
-        self(text) {
-            self.list += (self.list ? ';' : '') + text;
-
-            if (self.dev) {
-                throw new Error(text);
-            }
-        }
-
-    /**
-     * Development mode indicator
-     *
-     * @static
-     *
-     * @type {dev}
-     */
-    self.dev = false;
-
-    /**
-     * Errors messages stack
-     *
-     * @static
-     *
-     * @type {object}
-     */
-    self.list = '';
-
-    /**
-     * Link to a parent module
-     *
-     * @static
-     *
-     * @type {object}
-     */
-    self.parent = this;
 
     return self;
 
@@ -1425,40 +1286,24 @@ SDM.Events = SDM.Events || (function() {
             var
                 it0     = 0,
                 event   = '',
-                handler = '',
-                events  = self._auto.split(';');
+                auto    = this._auto.match(/([^:;\d]+)/g),
+                handler = null;
+
 
             // Setup main properties
-            this._root = root;
-            this._list = [];
+            this._root   = root;
+            this._saved  = {};
 
-            // Save autoevents
-            it0 = events.length;
+            // Save autoevents handlers if exist
+            if (it0 = auto.length) {
+                while (--it0 > -1) {
+                    event   = auto[it0];
+                    handler = handlers['on' + event];
 
-            while (--it0 > -1) {
-                event   = events[it0];
-                handler = 'on' + event;
-
-                if (handlers[handler]) {
-                    this.sub(event, handlers[handler]);
+                    this.sub(event, handler);
                 }
             }
         }
-
-    /**
-     * Available events list
-     *
-     * @static
-     * @private
-     *
-     * @type {string}
-     */
-    self._auto = 'drawstart;drawfinish;' +
-                 'dropstart;dropfinish;' +
-                 'holdstart;holdfinish;' +
-                 'loadstart;loadfinish;' +
-                 'openstart;openfinish;' +
-                 'shutstart;shutfinish';
 
     /**
      * Link to a parent module
@@ -1517,22 +1362,31 @@ SDM.Events = SDM.Events || (function() {
     }
 
     /**
-     * @property _list
+     * @property _auto
      * @property _root
+     * @property _saved
      * @function off
      * @function pub
      * @function sub
+     * @function halt
      * @function kill
+     * @function wait
      */
     self.prototype = {
         /**
-         * Saved events handlers stack (for clean removing)
+         * Available events list
          *
          * @private
          *
-         * @type {object}
+         * @type {string}
          */
-        _list : null,
+        _auto : 'drawstart;drawfinish;' +
+                'dropfail;dropstart:5;dropfinish;' +
+                'holdfail;holdstart:5;holdfinish;' +
+                'loadfail;loadstart:5;loadfinish;' +
+                'openfail;openstart:5;openfinish;' +
+                'shutstart;shutfinish;' +
+                'mousedown;keydown',
         /**
          * Instance DOM root
          *
@@ -1542,37 +1396,29 @@ SDM.Events = SDM.Events || (function() {
          */
         _root : null,
         /**
+         * Saved events handlers stack (for clean removing)
+         *
+         * @private
+         *
+         * @type {object}
+         */
+        _saved : null,
+        /**
          * Remove an event
          *
          * @param {string} event
          */
         off : function(event) {
             var
-                it0    = 0,
-                it1    = 0,
-                alias  = '',
-                saved  = null,
-                events = event.split(' ');
+                saved = this._saved[event];
 
-            if (it0 = events.length) {
-                while (--it0 > -1) {
-                    it1   = this._list.length;
-                    alias = events[it0];
+            if (this._saved[event]) {
+                this.halt(event);
 
-                    while (--it1 > -1) {
-                        saved = this._list[it1];
-
-                        if (saved.event == alias) {
-                            self.off(
-                                saved.event.indexOf('key') == 0 ? self.parent.document.body : this._root,
-                                saved.event,
-                                saved.handler
-                            );
-
-                            this._list.splice(it1, 1);
-                        }
-                    }
-                }
+                self.off(
+                    event.indexOf('key') == 0 ? self.parent.document.body : this._root,
+                    this._saved[event].handler
+                );
             }
         },
         /**
@@ -1582,50 +1428,64 @@ SDM.Events = SDM.Events || (function() {
          * @param {object} data
          */
         pub : function(event, data) {
-            var
-                it0    = 0,
-                alias  = '',
-                events = event.split(' ');
-
-            if ((it0 = events.length) && typeof data == 'object') {
-                while (--it0 > -1) {
-                    alias = events[it0];
-
-                    self.pub(
-                        alias.indexOf('key') == 0 ? self.parent.document.body : this._root,
-                        alias,
-                        data
-                    );
-                }
+            if (this._saved[event]) {
+                self.pub(
+                    event.indexOf('key') == 0 ? self.parent.document.body : this._root,
+                    event,
+                    data
+                );
             }
         },
         /**
          * Subscribe to an event
          *
-         * @param {string}   event
-         * @param {function} handler
+         * @param {string}           event
+         * @param {function}         handler
+         * @param {undefined|number} delay
          */
-        sub : function(event, handler) {
+        sub : function(event, handler, delay) {
             var
-                it0    = 0,
                 alias  = '',
-                events = event.split(' ');
+                source = this._auto.match(new RegExp('(' + event + ')(:(\\d+))*(;|$)'));
 
-            if ((it0 = events.length) && typeof handler == 'function') {
-                while (--it0 > -1) {
-                    alias = events[it0];
+            // Main events should be added once only
+            if (
+                source &&
+                (alias = source[1]) &&
+                !this._saved[alias] &&
+                typeof handler == 'function'
+            ) {
+                delay = typeof delay == 'number' && delay >= 0 ?
+                        delay :
+                        source[3] - 0;
 
-                    self.sub(
-                        alias.indexOf('key') == 0 ? self.parent.document.body : this._root,
-                        alias,
-                        handler
-                    );
-
-                    this._list.push({
-                        event   : alias,
-                        handler : handler
-                    });
+                // Save event handler and time limit
+                this._saved[alias] = {
+                    delay   : !self.parent.parent.isNaN(delay) ? delay : -1,
+                    handler : handler
                 }
+
+                // Save the real event
+                self.sub(
+                    alias.indexOf('key') == 0 ? self.parent.document.body : this._root,
+                    alias,
+                    handler
+                );
+            }
+        },
+        /**
+         * Stop an event timer
+         *
+         * @param {string} event
+         */
+        halt : function(event) {
+            var
+                saved = this._saved[event];
+
+            if (this._saved[event] && this._saved[event].timer) {
+                this._saved[event].timer = self.parent.parent.clearTimeout(
+                    this._saved[event].timer
+                );
             }
         },
         /**
@@ -1633,23 +1493,36 @@ SDM.Events = SDM.Events || (function() {
          */
         kill : function() {
             var
-                it0   = this._list.length,
-                saved = null;
+                al0 = '';
 
-            if (it0) {
-                while (--it0 > -1) {
-                    saved = this._list[it1];
-
-                    self.off(
-                        saved.event.indexOf('key') == 0 ? self.parent.document.body : this._root,
-                        saved.event,
-                        saved.handler
-                    );
-
-                    this._list.splice(it1, 1);
-                }
+            for (al0 in this._saved) {
             }
         },
+        /**
+         * Fire an event with timer
+         *
+         * @param {string} event
+         * @param {object} data
+         */
+        wait : function(event, data) {
+            data = data && typeof data == 'object' ? data : {};
+
+            var
+                item = this._saved[event];
+
+            if (item && item.delay && data.fail) {
+                this.halt(event);
+
+                item.timer = self.parent.parent.setTimeout(
+                    data.fail,
+                    item.delay * 1000
+                );
+
+                this.pub(event, data);
+            } else if (data.done) {
+                data.done();
+            }
+        }
     };
 
     return self;

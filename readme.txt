@@ -29,18 +29,6 @@
     --------------------------------------------------------------------------
      cols_num            | Number of columns visible in frame (2—5).
     --------------------------------------------------------------------------
-     drop_ttl            | Number of seconds module will wait for the row
-                         | deselection success.
-    --------------------------------------------------------------------------
-     hold_ttl            | Number of seconds module will wait for the row
-                         | selection success.
-    --------------------------------------------------------------------------
-     load_ttl            | Number of seconds module will wait for the data
-                         | load success.
-    --------------------------------------------------------------------------
-     open_ttl            | Number of seconds module will wait for the cursor
-                         | set success.
-    --------------------------------------------------------------------------
      id                  | SDM instance id. This instance could be found
                          | after the initiation by StructuredDataManager[id].
     --------------------------------------------------------------------------
@@ -169,11 +157,13 @@
     ==========================================================================
      id              | Instance id.
     --------------------------------------------------------------------------
-     gui             | 
+     gui             | Instance GUI properties and methods. See the Gui
+                     | module description below.
     --------------------------------------------------------------------------
      args            | Parsed and cleaned user arguments.
     --------------------------------------------------------------------------
-     events          | 
+     events          | Instance events properties and methods. See the Events
+                     | module description below.
     --------------------------------------------------------------------------
      holded          | Ids of rows which have been selected by mouse
                      | doubleclick or enter keypress, separated with the
@@ -181,7 +171,8 @@
     --------------------------------------------------------------------------
      opened          | Row which has been focused by mouse singleclick.
     --------------------------------------------------------------------------
-     pulling         | 
+     pulling         | Indicator telling that some external action is
+                     | in process.
     ==========================================================================
 
 
@@ -211,8 +202,6 @@
                       |         in the args was set on true.
     --------------------------------------------------------------------------
      kill()           | Destroy an instance.
-    --------------------------------------------------------------------------
-     load()           | Load main data structure.
     --------------------------------------------------------------------------
      move()           | Scroll to the row, which has been focused before.
     --------------------------------------------------------------------------
