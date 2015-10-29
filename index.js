@@ -41,7 +41,7 @@ var SDM = SDM || (function() {
             this.gui    = self.Gui(args);
             this.events = self.Events(this.gui.root, args);
 
-            // Set mousedown event
+            // Set user generated events
             this.events.sub('mousedown', this._binded.live);
 
             // Load data for the root column
@@ -928,6 +928,7 @@ SDM.Gui = SDM.Gui || (function() {
 
             var
                 part  = '',
+                find  = null,
                 node  = args.wrapper,
                 attrs = null,
                 parts = ['name', 'wait', 'hide', 'hint'];
@@ -946,7 +947,7 @@ SDM.Gui = SDM.Gui || (function() {
                 className : 'sdm'
             }, node);
 
-            // Name text
+            // Visible window DOM node
             node = self.create({
                 className : 'sdm__unit'
             }, node);
@@ -961,9 +962,11 @@ SDM.Gui = SDM.Gui || (function() {
                     attrs.title = 'Single click — expand; double click — select; ' +
                                   'Ctrl + double click — multi select or Cmd + double click; ' +
                                   'Esc — close'
+                } else if (part == 'find') {
+                    attrs.contenteditable = true;
                 }
 
-                self.create(attrs, node);
+                self.create(attrs, part.match(/(text|exit)/) ? find : node);
             }
 
             // Columns stack
@@ -976,9 +979,14 @@ SDM.Gui = SDM.Gui || (function() {
                                 3
                             }
             }, node);
+            this._col(0);
 
             // Rows and groups stack
             this.rows = {'..' : {}};
+            this.rows['..']['|'] = self.create({
+                className : 'sdm__rows',
+                data      : {id : '|'}
+            }, this.cols[0]);
         }
 
     /**
@@ -1015,14 +1023,24 @@ SDM.Gui = SDM.Gui || (function() {
 
         // Read properties for node
         for (al0 in args) {
-            if (al0 == 'data') {
+            switch (al0) {
                 // Set the node data-attributes
-                for (al1 in args.data) {
-                    node.setAttribute('data-' + al1, args.data[al1]);
-                }
-            } else if (!al0.match(/tagName/)) {
+                case 'data':
+                    for (al1 in args.data) {
+                        node.setAttribute('data-' + al1, args.data[al1]);
+                    }
+                break;
+                // Filter tagName property
+                case 'tagName':
+                break;
+                // Set attributes
+                case 'contenteditable':
+                    node.setAttribute(al0, args[al0]);
+                break;
                 // Set the node property
-                node[al0] = args[al0];
+                default:
+                    node[al0] = args[al0];
+                break;
             }
         }
 
@@ -1056,17 +1074,17 @@ SDM.Gui = SDM.Gui || (function() {
      */
     self.prototype = {
         /**
-         * Available modes list
-         *
-         * @type {string}
-         */
-        mode : 'search;observe',
-        /**
-         * Stack of created cols and cols wrapper
+         * Stack of created cols and cols wrapper DOM node
          *
          * @type {object}
          */
         cols : null,
+        /**
+         * Counter badge and search exit button DOM node
+         *
+         * @type {object}
+         */
+        exit : null,
         /**
          * Root DOM element
          *
@@ -1074,7 +1092,7 @@ SDM.Gui = SDM.Gui || (function() {
          */
         root : null,
         /**
-         * Stack of created rows and rows groups
+         * Stack of created rows and rows groups DOM node
          *
          * @type {object}
          */
@@ -1098,8 +1116,7 @@ SDM.Gui = SDM.Gui || (function() {
             // Create a row
             this.rows[data.id] = self.create({
                 className : 'sdm__box',
-                innerHTML : data.html,
-                data      : {id : data.id}
+                innerHTML : data.html
             }, this.rows['..'][data.pid]);
         },
         /**
@@ -1143,6 +1160,20 @@ SDM.Gui = SDM.Gui || (function() {
                 className : 'sdm__row' + (data.dead ? ' sdm__row_data_dead' : ''),
                 data      : {id : data.id, seek : data.seek}
             }, this.rows['..'][data.pid]);
+        },
+        /**
+         * Hide progressbar
+         */
+        halt : function() {
+            this.root.className = this.root.className.
+                                  replace(/\s*sdm_is_waiting/, '');
+        },
+        /**
+         * Hide Gui window
+         */
+        hide : function() {
+            this.root.className = this.root.className.
+                                  replace(/\s*sdm_is_observing/, '');
         },
         /**
          * Remove an instance
@@ -1223,49 +1254,10 @@ SDM.Gui = SDM.Gui || (function() {
             }
         },
         /**
-         * Turn Gui window into search mode
-         */
-        find : function() {
-            this.turn('search');
-        },
-        /**
-         * Hide progressbar
-         */
-        halt : function() {
-            this.root.className = this.root.className.
-                                  replace(/\s*sdm_is_waiting/, '');
-        },
-        /**
-         * Hide Gui window
-         */
-        hide : function() {
-            this.root.className = this.root.className.
-                                  replace(new RegExp(
-                                      '\\ssdm_mode_(' +
-                                      this.mode.replace(/;/, '|') +
-                                      ')',
-                                      'g'
-                                  ), '');
-        },
-        /**
-         * Change Gui window mode
-         *
-         * @param {string} mode
-         */
-        turn : function(mode) {
-            // Hide Gui window
-            this.hide();
-
-            // Check if the given mode exists
-            if (typeof mode == 'string' && this.mode.indexOf(mode) > -1) {
-                this.root.className += ' sdm_mode_' + mode;
-            }
-        },
-        /**
          * Show Gui window
          */
         show : function() {
-            this.turn('observe');
+            this.root.className += ' sdm_is_observing';
         },
         /**
          * Show progressbar
@@ -1408,7 +1400,7 @@ SDM.Events = SDM.Events || (function() {
                 'loadfail;loadstart:5;loadfinish;' +
                 'openfail;openstart:5;openfinish;' +
                 'shutstart;shutfinish;' +
-                'mousedown;keydown',
+                'keyup;keydown;mousedown',
         /**
          * Instance DOM root
          *
@@ -1438,7 +1430,11 @@ SDM.Events = SDM.Events || (function() {
                 this.halt(event);
 
                 self.off(
-                    event.indexOf('key') == 0 ? self.parent.document.body : this._root,
+                    (
+                        event.indexOf('keydown') == 0 ?
+                        self.parent.document.body :
+                        this._root
+                    ),
                     this._saved[event].handler
                 );
             }
@@ -1452,7 +1448,11 @@ SDM.Events = SDM.Events || (function() {
         pub : function(event, data) {
             if (this._saved[event]) {
                 self.pub(
-                    event.indexOf('key') == 0 ? self.parent.document.body : this._root,
+                    (
+                        event.indexOf('keydown') == 0 ?
+                        self.parent.document.body :
+                        this._root
+                    ),
                     event,
                     data
                 );
