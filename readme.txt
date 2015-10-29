@@ -158,13 +158,7 @@
     ==========================================================================
      id              | Instance id.
     --------------------------------------------------------------------------
-     gui             | Instance GUI properties and methods. See the Gui
-                     | module description below.
-    --------------------------------------------------------------------------
      args            | Parsed and cleaned user arguments.
-    --------------------------------------------------------------------------
-     events          | Instance events properties and methods. See the Events
-                     | module description below.
     --------------------------------------------------------------------------
      holded          | Ids of rows which have been selected by mouse
                      | doubleclick or enter keypress, separated with the
