@@ -71,8 +71,8 @@ var SDM = SDM || (function() {
     self.document = this.document;
 
     /**
-     * @property _mouse
      * @property _binded
+     * @property _timers
      * @property _delayed
      * @property id
      * @property gui
@@ -111,12 +111,6 @@ var SDM = SDM || (function() {
          */
         pulling : false,
         /**
-         * Mouse timer id
-         *
-         * @type {number}
-         */
-        _mouse : 0,
-        /**
          * Instance id
          *
          * @type {number}
@@ -150,6 +144,14 @@ var SDM = SDM || (function() {
          * @type {object}
          */
         _binded : null,
+        /**
+         * Instance timers stack
+         *
+         * @private
+         *
+         * @type {object}
+         */
+        _timers : null,
         /**
          * Gui operations module instance
          *
@@ -186,6 +188,7 @@ var SDM = SDM || (function() {
             // Get a short Gui part name
             part = part[0].replace(/\s[\s\S]*$/, '').replace(/sdm__/, '');
 
+            // Call the event subhandler
             if (this['_' + type]) {
                 this['_' + type]({
                     ctrl : ctrl,
@@ -197,6 +200,21 @@ var SDM = SDM || (function() {
             }
 
             return this;
+        },
+        /**
+         * Initiate row subcontent loading
+         *
+         * @private
+         */
+        _open : function() {
+            var
+                row = this.gui.rows[this.opened];
+
+            // Set the loading status for row
+            row.className = row.className.replace(/_data_load(\s)/, '_data_loading$1');
+
+            // Run external actions
+            this.pull(this.opened, 'open');
         },
         /**
          * Start data loading process
@@ -417,10 +435,10 @@ var SDM = SDM || (function() {
             switch (event.part) {
                 // 
                 case 'row':
-                    if (this._mouse) {
+                    if (this._timers.click) {
                         // Cancel the cursor set
-                        self.parent.clearTimeout(this._mouse);
-                        this._mouse = 0;
+                        self.parent.clearTimeout(this._timers.click);
+                        this._timers.click = undefined;
 
                         // Select a row
                         this.hold(this.opened, event.ctrl);
@@ -432,8 +450,8 @@ var SDM = SDM || (function() {
                     this.opened = event.node.getAttribute('data-id');
 
                     // Delay the cursor set
-                    this._mouse = self.parent.setTimeout(
-                        this._binded.open,
+                    this._timers.click = self.parent.setTimeout(
+                        this._binded.click,
                         150
                     );
                 break;
@@ -560,18 +578,19 @@ var SDM = SDM || (function() {
         init : function(args) {
             // Reset ids, indicators and stacks
             this.pulling  = false;
-            this._mouse   = 0;
             this._delayed = '';
             this.holded   = '';
             this.opened   = '';
+            this._timers  = {};
             this.events   = {};
 
             // Create the proxied methods links stack
             this._binded = {
                 hide   : this.hide.bind(this),
                 live   : this._live.bind(this),
-                open   : this.open.bind(this),
+                open   : this._open.bind(this),
                 show   : this.show.bind(this),
+                click  : this.open.bind(this),
                 failed : this._failed.bind(this),
                 pulled : this._pulled.bind(this)
             };
@@ -680,6 +699,12 @@ var SDM = SDM || (function() {
                 return this;
             }
 
+            // Clear row subcontent loading timer
+            if (this._timers.open) {
+                self.parent.clearTimeout(this._timers.open);
+                this._timers.open = undefined;
+            }
+
             // Hide rows and columns
             this.shut();
 
@@ -687,11 +712,8 @@ var SDM = SDM || (function() {
             switch (row.className.replace(/[\s\S]*(data_(html|load|rows)(\s|$))[\s\S]*/g, '$2')) {
                 // Load subitems
                 case 'load':
-                    // Set the loading status for row
-                    row.className = row.className.replace(/_data_load/, '_data_loading');
-
-                    // Run external actions
-                    this.pull(this.opened, 'open');
+                    // Set row subcontent loading timer
+                    this._timers.open = self.parent.setTimeout(this._binded.open, 500);
                 break;
                 // Show subitems
                 case 'html':
@@ -712,10 +734,10 @@ var SDM = SDM || (function() {
             }
 
             // Scroll to the chosen column
-            this.move(this._mouse);
+            this.move(this._timers.click);
 
             // Remove mousedown timer id
-            this._mouse = 0;
+            this._timers.click = undefined;
 
             return this;
         },
