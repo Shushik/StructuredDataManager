@@ -53,6 +53,13 @@ var SDM = SDM || (function() {
         }
 
     /**
+     * Number of module version
+     *
+     * @type {string}
+     */
+    self.version = '2.0';
+
+    /**
      * Local window link
      *
      * @static
@@ -329,7 +336,7 @@ var SDM = SDM || (function() {
 
             if ((
                 this.pulling &&
-                (queue = this._delayed.split(/;/)) &&
+                (queue = this._delayed.split(';')) &&
                 queue.length &&
                 (action = queue.shift().split(':'))
             )) {
@@ -396,30 +403,30 @@ var SDM = SDM || (function() {
          */
         _keydown : function(event) {
             switch (event.code) {
-                // 
+                // Select row on Enter
                 case 13:
                     this.hold(this.opened, event.ctrl);
                 break;
-                // 
+                // Hide GUI window on Esc
                 case 27:
                     this.hide();
                 break;
-                // 
+                // Set cursor at the parent row
                 case 37:
                     event.root.preventDefault();
                     this.quit();
                 break;
-                // 
+                // Set cursor at the upper row
                 case 38:
                     event.root.preventDefault();
                     this.back();
                 break;
-                // 
+                // Set cursor at the first child row
                 case 39:
                     event.root.preventDefault();
                     this.step();
                 break;
-                // 
+                // Set cursor at the downer row
                 case 40:
                     event.root.preventDefault();
                     this.next();
@@ -438,10 +445,12 @@ var SDM = SDM || (function() {
                     if (this._timers.click) {
                         // Cancel the cursor set
                         self.parent.clearTimeout(this._timers.click);
-                        this._timers.click = undefined;
 
                         // Select a row
                         this.hold(this.opened, event.ctrl);
+
+                        // Remove mousedown timer id
+                        this._timers.click = undefined;
 
                         return;
                     }
@@ -462,7 +471,7 @@ var SDM = SDM || (function() {
             }
         },
         /**
-         * Set a visual cursor to the previous row
+         * Set cursor at the upper row
          *
          * @return {object}
          */
@@ -624,36 +633,7 @@ var SDM = SDM || (function() {
             self[this.id] = null;
         },
         /**
-         * Scroll to the chosen column
-         *
-         * @private
-         *
-         * @param {number} mouse
-         *
-         * @return {object}
-         */
-        move : function(mouse) {
-            var
-                col = null,
-                row = this.gui.rows[this.opened];
-
-            if (row) {
-                // Get the previous or the current column
-                col = row.parentNode.parentNode;
-
-                // Don't make a vertical scroll on click
-                if (!mouse) {
-                    col.scrollTop = row.offsetTop;
-                }
-
-                col = col.previousSibling ? col.previousSibling : col;
-                col.parentNode.scrollLeft = col.offsetLeft;
-            }
-
-            return this;
-        },
-        /**
-         * Set a visual cursor to the next row
+         * Set cursor at the downer row
          *
          * @return {object}
          */
@@ -734,7 +714,7 @@ var SDM = SDM || (function() {
             }
 
             // Scroll to the chosen column
-            this.move(this._timers.click);
+            this.gui.move(this.opened, this._timers.click);
 
             // Remove mousedown timer id
             this._timers.click = undefined;
@@ -819,7 +799,7 @@ var SDM = SDM || (function() {
             return this;
         },
         /**
-         * Set the visual cursor to the parent row
+         * Set cursor at the parent row
          */
         quit : function() {
             var
@@ -878,7 +858,7 @@ var SDM = SDM || (function() {
             return this;
         },
         /**
-         * Set the visual cursor to the first child row
+         * Set cursor at the first child row
          *
          * @return {object}
          */
@@ -908,6 +888,8 @@ var SDM = SDM || (function() {
 
 /**
  * Gui operations module
+ *
+ * @todo has(), get(), set() methods
  */
 SDM.Gui = SDM.Gui || (function() {
 
@@ -1179,6 +1161,29 @@ SDM.Gui = SDM.Gui || (function() {
          * Remove an instance
          */
         kill : function() {
+        },
+        /**
+         * Scroll to the chosen column
+         *
+         * @param {string}         id
+         * @param {boolean|number} y
+         */
+        move : function(id, y) {
+            var
+                col = null,
+                row = this.rows[id];
+
+            if (row) {
+                // Get the previous or the current column
+                col = row.parentNode.parentNode;
+
+                // Don't make a vertical scroll on click
+                if (!y) {
+                    col.scrollTop = row.offsetTop;
+                }
+
+                col.parentNode.scrollLeft = col.offsetLeft;
+            }
         },
         /**
          * Create cols and rows
