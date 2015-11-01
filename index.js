@@ -100,7 +100,6 @@ var SDM = SDM || (function() {
      * @function hold
      * @function init
      * @function kill
-     * @function move
      * @function next
      * @function open
      * @function pull
@@ -687,7 +686,7 @@ var SDM = SDM || (function() {
                 id  = this.gui.get('id', row);
             } else if (
                 !this.opened &&
-                (row = this.gui.get('first'))
+                (row = this.gui.get('row:first'))
             ) {
                 this.opened = id = this.gui.get('id', row);
             }
@@ -721,7 +720,8 @@ var SDM = SDM || (function() {
                 break;
             }
 
-            //
+            // Save a link for the first row in chain
+            // for further scrolling
             to = row;
 
             // Set cursors at all rows in chain and scroll to the last column
@@ -733,6 +733,7 @@ var SDM = SDM || (function() {
                 row = this.gui.get('row', this.gui.get('id', row.parentNode));
             }
 
+            // Scroll to the first row in chain
             this.gui.move(to, (this._timers.click ? true : false));
 
             // Remove mousedown timer id
@@ -1137,9 +1138,10 @@ SDM.Gui = SDM.Gui || (function() {
                     return this.root.querySelector('.sdm__cols');
                 break;
                 // Get the very first row
-                case 'first':
+                case 'col:first':
+                case 'row:first':
                     return this.root.querySelector(
-                        '.sdm__row:first-child'
+                        '.sdm__' + what + '-child'
                     );
                 break;
                 // Get all displayed columns, rows groups and rows
