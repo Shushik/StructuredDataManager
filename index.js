@@ -1124,27 +1124,17 @@ SDM.Gui = SDM.Gui || (function() {
                     return (args instanceof HTMLElement ? args.id : args).
                            replace(/sdm_[^_]*_[^_]*_/, '');
                 break;
-                // Get the column node
+                // Get the column, rows group or row node
                 case 'col':
-                    return self.parent.document.getElementById(
-                        'sdm_' + this.parent.id + '_col_' + args
-                    );
-                break;
-                // Get the row node
                 case 'row':
+                case 'rows':
                     return self.parent.document.getElementById(
-                        'sdm_' + this.parent.id + '_row_' + args
+                        'sdm_' + this.parent.id + '_' + what + '_' + args
                     );
                 break;
                 // Get the columns wrapper node
                 case 'cols':
                     return this.root.querySelector('.sdm__cols');
-                break;
-                // Get the rows group node
-                case 'rows':
-                    return self.parent.document.getElementById(
-                        'sdm_' + this.parent.id + '_rows_' + args
-                    );
                 break;
                 // Get the very first row
                 case 'first':
@@ -1541,11 +1531,6 @@ SDM.Events = SDM.Events || (function() {
          * Remove an instance
          */
         kill : function() {
-            var
-                al0 = '';
-
-            for (al0 in this._saved) {
-            }
         },
         /**
          * Fire an event with timer
