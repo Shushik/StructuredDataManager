@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html><head>
+<meta charset="UTF-8">
+<link rel="stylesheet" type="text/css" href="index.css">
+<script type="text/javascript" src="index.js"></script>
+<title>Structured Data Manager Example</title>
+</head><body>
+
+<script type="text/javascript">
+    SDM({
+        multiple : true,
+        name_txt : 'Structured Data Manager Example',
+        hide_txt : 'Close Finder',
+        onloadstart : function(event) {
+            switch (event.detail.id) {
+                case '-':
+                    setTimeout(function() {
+                        event.detail.done([
+                            {id : 1, name : 'Row one', data : [
+                                {id : 6, name : 'Row six', dead : true},
+                                {id : 7, name : 'Row seven', data : '<div style="display:block;height:200px;margin:3px 0 0 0;background:#F4F4F4"></div><div style="text-align:center;margin:3px 0 0 0;color:#666">Row seven preview</div>'},
+                                {id : 8, name : 'Row eight'},
+                                {id : 9, name : 'Row nine', data : [
+                                    {id : 11, name : 'Row eleven', data : [
+                                        {id : 16, name : 'Row sixteen'},
+                                        {id : 17, name : 'Row seventeen'},
+                                        {id : 18, name : 'Row eighteen'},
+                                        {id : 19, name : 'Row nineteen'},
+                                        {id : 20, name : 'Row twenty'}
+                                    ]},
+                                    {id : 12, name : 'Row twelve'},
+                                    {id : 13, name : 'Row thirteen'},
+                                    {id : 14, name : 'Row fourteen'},
+                                    {id : 15, name : 'Row fifteen'}
+                                ]},
+                                {id : 10, name : 'Row ten'}
+                            ]},
+                            {id : 2, name : 'Row two'},
+                            {id : 3, name : 'Row three'},
+                            {id : 4, name : 'Row four', data : true},
+                            {id : 5, name : 'Row five', data : true}
+                        ]);
+                    }, 500);
+                break;
+            }
+        },
+        onopenstart : function(event) {
+            switch (event.detail.id) {
+                case '4':
+                    setTimeout(function() {
+                        event.detail.done([
+                            {id : 21, name : 'Row twenty one'},
+                            {id : 22, name : 'Row twenty two'},
+                            {id : 23, name : 'Row twenty three'},
+                            {id : 24, name : 'Row twenty four'},
+                            {id : 25, name : 'Row twenty five'},
+                            {id : 26, name : 'Row twenty six'},
+                            {id : 27, name : 'Row twenty seven'},
+                            {id : 28, name : 'Row twenty eight'},
+                            {id : 29, name : 'Row twenty nine'},
+                            {id : 30, name : 'Row thirty'},
+                            {id : 31, name : 'Row thirty one'},
+                            {id : 32, name : 'Row thirty two'},
+                            {id : 33, name : 'Row thirty three'},
+                            {id : 34, name : 'Row thirty four'},
+                            {id : 35, name : 'Row thirty five'},
+                            {id : 36, name : 'Row thirty six'},
+                            {id : 37, name : 'Row thirty seven'},
+                            {id : 38, name : 'Row thirty eight'},
+                            {id : 39, name : 'Row thirty nine'},
+                            {id : 40, name : 'Row fourty'},
+                            {id : 41, name : 'Row fourty one'},
+                            {id : 42, name : 'Row fourty two'}
+                        ]);
+                    }, 3000);
+                break;
+                case '5':
+                    setTimeout(function() {
+                        event.detail.done('<div style="display:block;height:200px;margin:3px 0 0 0;background:#F4F4F4"></div><div style="text-align:center;margin:3px 0 0 0;color:#666">Row five preview</div>');
+                    }, 2000);
+                break;
+            }
+        }
+    }).show();
+</script>
+
+</body></html>

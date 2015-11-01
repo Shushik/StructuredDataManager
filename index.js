@@ -38,8 +38,8 @@ var SDM = SDM || (function() {
             this.init(args);
 
             // Init submodules
-            this.gui    = self.Gui(args);
-            this.events = self.Events(this.gui.root, args);
+            this.gui    = self.Gui(args, this);
+            this.events = self.Events(args, this);
 
             // Set user generated events
             this.events.sub('mousedown', this._binded.live);
@@ -182,8 +182,6 @@ var SDM = SDM || (function() {
          */
         _live : function(event) {
             var
-                ctrl = event.ctrlKey || event.metaKey ? true : false,
-                code = event.keyCode ? event.keyCode : event.which,
                 type = event.type,
                 part = event.target.className,
                 node = event.target;
@@ -192,14 +190,19 @@ var SDM = SDM || (function() {
             part = node == self.document.body ? 'sdm__root' : part;
             part = part ? part.match(/^sdm(__\S+)*[\s\S]*/) : null;
 
+            // Not a part of active GUI
+            if (!part) {
+                return;
+            }
+
             // Get a short Gui part name
             part = part[0].replace(/\s[\s\S]*$/, '').replace(/sdm__/, '');
 
             // Call the event subhandler
             if (this['_' + type]) {
                 this['_' + type]({
-                    ctrl : ctrl,
-                    code : code,
+                    ctrl : event.ctrlKey || event.metaKey ? true : false,
+                    code : event.keyCode ? event.keyCode : event.which,
                     part : part,
                     node : node,
                     root : event
@@ -215,10 +218,11 @@ var SDM = SDM || (function() {
          */
         _open : function() {
             var
-                row = this.gui.rows[this.opened];
+                row = this.gui.get('row', this.opened);
 
-            // Set the loading status for row
-            row.className = row.className.replace(/_data_load(\s)/, '_data_loading$1');
+            // Mark the row with the loading status
+            this.gui.mod(row, 'data', 'load', true);
+            this.gui.mod(row, 'data', 'loading');
 
             // Run external actions
             this.pull(this.opened, 'open');
@@ -250,7 +254,7 @@ var SDM = SDM || (function() {
             this.pulling = true;
 
             // Turn the progress bar on
-            this.gui.wait();
+            this.gui.mod(this.gui.root, 'is', 'waiting');
 
             // Set the timer for the start event
             this.events.wait(action + 'start', {
@@ -287,7 +291,7 @@ var SDM = SDM || (function() {
                 this.events.halt(action + 'start');
     
                 // Turn the progress bar off
-                this.gui.halt();
+                this.gui.mod(this.gui.root, 'is', 'waiting', false);
 
                 // Reset the pulling process indicator
                 this.pulling = false;
@@ -303,7 +307,7 @@ var SDM = SDM || (function() {
                 });
 
                 // Remove loading class
-                if (row = this.gui.rows[id]) {
+                if (row = this.gui.get('row', id)) {
                     row.className = row.className.replace(
                         /sdm__row_data_loading/,
                         'sdm__row_data_dead'
@@ -348,7 +352,7 @@ var SDM = SDM || (function() {
                 this.events.halt(action + 'start');
 
                 // Turn the progress bar off
-                this.gui.halt();
+                this.gui.mod(this.gui.root, 'is', 'waiting', true);
 
                 // Reset the pulling process indicator
                 this.pulling = false;
@@ -388,12 +392,11 @@ var SDM = SDM || (function() {
          */
         _opened : function(data) {
             var
-                rows = null;
+                rows = this.gui.get('rows', this.opened);
 
-            // Show the row subcontent if exists
-            if (rows = this.gui.rows['..'][this.opened]) {
-                rows.className += ' sdm__rows_are_opened';
-                rows.parentNode.className += ' sdm__col_is_opened';
+            if (rows) {
+                this.gui.mod(rows, 'are', 'opened');
+                this.gui.mod(rows.parentNode, 'is', 'opened');
             }
         },
         /**
@@ -456,7 +459,7 @@ var SDM = SDM || (function() {
                     }
 
                     // Get the id for the cursor
-                    this.opened = event.node.getAttribute('data-id');
+                    this.opened = this.gui.get('id', event.node);
 
                     // Delay the cursor set
                     this._timers.click = self.parent.setTimeout(
@@ -465,7 +468,7 @@ var SDM = SDM || (function() {
                     );
                 break;
                 // 
-                case 'hide': case 'sdm':
+                case 'sdm': case 'hide':
                     this.hide();
                 break;
             }
@@ -478,17 +481,17 @@ var SDM = SDM || (function() {
         back : function() {
             var
                 id  = this.opened,
-                row = this.gui.rows[id];
+                row = this.gui.get('row', id);
 
             if (row && (row = row.previousSibling)) {
-                this.open(row.getAttribute('data-id'));
+                this.open(this.gui.get('id', row));
             } else if (
                 !id &&
-                (row = this.gui.rows['..']['-']) &&
+                (row = this.gui.get('rows', '-')) &&
                 (row = row.firstChild) &&
                 row.className.indexOf('__row') != -1
             ) {
-                this.open(row.getAttribute('data-id'));
+                this.open(this.gui.get('id', row));
             }
 
             return this;
@@ -496,7 +499,7 @@ var SDM = SDM || (function() {
         /**
          * Deselect a row
          *
-         * @param {undefined|string} id
+         * @param {undefined|string|object} id
          *
          * @return {object}
          */
@@ -505,14 +508,23 @@ var SDM = SDM || (function() {
                 it0  = 0,
                 ids  = '',
                 row  = null,
-                rows = id ? [this.gui.rows[id]] : this.gui.root.querySelectorAll('.sdm__row_is_holded');
+                rows = null;
+
+            if (typeof id == 'string') {
+                rows = [this.gui.get('row', id)];
+            } else if (id instanceof HTMLElement) {
+                rows = [id];
+            } else {
+                rows = this.gui.get('holded');
+            }
 
             if (rows && (it0 = rows.length) > 0) {
                 while (--it0 > -1) {
                     row = rows[it0];
-                    row.className = row.className.replace(/\ssdm__row_is_holded/, '');
+                    id  = this.gui.get('id', row);
 
-                    id = row.getAttribute('data-id');
+                    // Deselect the row
+                    this.gui.mod(row, 'is', 'holded', true);
 
                     this.holded = this.holded.replace(new RegExp('(^|;)' + id, ''));
 
@@ -530,7 +542,7 @@ var SDM = SDM || (function() {
          */
         hide : function() {
             // Hide Gui window
-            this.gui.hide();
+            this.gui.mod(this.gui.root, 'is', 'observing', true);
 
             // Reset Gui keydown event
             this.events.off('keydown', this._binded.lived);
@@ -547,7 +559,7 @@ var SDM = SDM || (function() {
          */
         hold : function(id, add) {
             var
-                row = this.gui.rows[id];
+                row = this.gui.get('row', id);
 
             // Don't hold nonexistent and disabled rows
             if (!row || row.className.indexOf('_data_dead') != -1) {
@@ -556,7 +568,7 @@ var SDM = SDM || (function() {
 
             // Set a cursor
             if (row.className.indexOf('_is_opened') == -1) {
-                this.open(id);
+                this.open(row);
             }
 
             // Unhold the row if it's already holded
@@ -569,8 +581,8 @@ var SDM = SDM || (function() {
             // Save current row id
             this.holded += (this.holded ? ';' : '') + id;
 
-            // Make a visible selection
-            row.className += ' sdm__row_is_holded';
+            // Select the row
+            this.gui.mod(row, 'is', 'holded');
 
             // Call external actions
             this.pull(id, 'hold');
@@ -640,17 +652,17 @@ var SDM = SDM || (function() {
         next : function() {
             var
                 id  = this.opened,
-                row = this.gui.rows[id];
+                row = this.gui.get('row', id);
 
             if (row && (row = row.nextSibling)) {
-                this.open(row.getAttribute('data-id'));
+                this.open(this.gui.get('id', row));
             } else if (
                 !id &&
-                (row = this.gui.rows['..']['-']) &&
+                (row = this.gui.get('rows', '-')) &&
                 (row = row.firstChild) &&
                 row.className.indexOf('__row') != -1
             ) {
-                this.open(row.getAttribute('data-id'));
+                this.open(this.gui.get('id', row));
             }
 
             return this;
@@ -658,24 +670,30 @@ var SDM = SDM || (function() {
         /**
          * Set a cursor to the row
          *
-         * @param {string} id
+         * @param {undefined|string|object} id
          *
          * @return {object}
          */
         open : function(id) {
             var
-                col = null,
+                to  = null,
                 row = null;
 
             // Set the current row id
             if (typeof id == 'string') {
                 this.opened = id;
-            } else if (!this.opened) {
-                this.opened = id = this.gui.rows['..'].firstChild.getAttribute('data-id');
+            } else if (id instanceof HTMLElement) {
+                row = id;
+                id  = this.gui.get('id', row);
+            } else if (
+                !this.opened &&
+                (row = this.gui.get('first'))
+            ) {
+                this.opened = id = this.gui.get('id', row);
             }
 
             // Don't go further if this row already has been selected
-            if (!(row = this.gui.rows[this.opened])) {
+            if (!row && !(row = this.gui.get('row', this.opened))) {
                 return this;
             }
 
@@ -703,18 +721,19 @@ var SDM = SDM || (function() {
                 break;
             }
 
-            // Select all rows in chain
-            while (row) {
-                row.className += ' sdm__row_is_opened';
-                row.parentNode.className += ' sdm__rows_are_opened';
-                row.parentNode.parentNode.className += ' sdm__col_is_opened';
+            //
+            to = row;
 
-                // Get the parent row
-                row = this.gui.rows[row.parentNode.getAttribute('data-id')];
+            // Set cursors at all rows in chain and scroll to the last column
+            while (row) {
+                this.gui.mod(row, 'is', 'opened');
+                this.gui.mod(row.parentNode, 'are', 'opened');
+                this.gui.mod(row.parentNode.parentNode, 'is', 'opened');
+
+                row = this.gui.get('row', this.gui.get('id', row.parentNode));
             }
 
-            // Scroll to the chosen column
-            this.gui.move(this.opened, this._timers.click);
+            this.gui.move(to, (this._timers.click ? true : false));
 
             // Remove mousedown timer id
             this._timers.click = undefined;
@@ -758,17 +777,12 @@ var SDM = SDM || (function() {
          */
         push : function(id, data) {
             var
-                accepted = false,
-                it0      = 0,
-                type     = typeof data,
-                row      = this.gui.rows[id];
-
-            if (!(accepted = type.match(/(string|object)/) ? true : false)) {
-                return this;
-            }
+                deep = 0,
+                type = typeof data,
+                row  = null;
 
             // Get a row
-            row = this.gui.rows[id];
+            row = this.gui.get('row', id);
 
             // Tell subscribers the rendering has been started
             this.events.pub('drawstart', {
@@ -779,15 +793,13 @@ var SDM = SDM || (function() {
 
             if (row) {
                 // Get the columns deep level
-                it0 = row.parentNode.parentNode.getAttribute('data-id');
-                it0 -= 0;
-                it0 += 1;
+                deep = this.gui.get('id', row.parentNode.parentNode);
+                deep -= 0;
+                deep += 1;
             }
 
             // Create cols and rows
-            if (accepted) {
-                this.gui.push(data, id, it0);
-            }
+            this.gui.push(data, id, deep);
 
             // Tell subscribers the rendering has been finished
             this.events.pub('drawfinish', {
@@ -804,16 +816,16 @@ var SDM = SDM || (function() {
         quit : function() {
             var
                 id  = this.opened,
-                row = this.gui.rows[id];
+                row = this.gui.get('row', id);
 
-            if (row && (id = row.parentNode.getAttribute('data-id'))) {
+            if (row && (id = this.gui.get('id', row.parentNode))) {
                 if (id != '-') {
                     row.className = row.className.replace(/\s*sdm__row_is_opened/, '');
     
                     if (
-                        (row = this.gui.rows[id])
+                        (row = this.gui.get('row', id))
                     ) {
-                        this.open(row.getAttribute('data-id'));
+                        this.open(this.gui.get('id', row));
                     }
                 }
             }
@@ -827,7 +839,7 @@ var SDM = SDM || (function() {
          */
         show : function() {
             // Show Gui window
-            this.gui.show();
+            this.gui.mod(this.gui.root, 'is', 'observing');
 
             // Set Gui keydown event
             this.events.sub('keydown', this._binded.live);
@@ -835,23 +847,20 @@ var SDM = SDM || (function() {
             return this;
         },
         /**
-         * Hide rows and columns
+         * Remove cursors from all rows in chain and hide
+         * all rows groups and columns
          *
          * @return {object}
          */
         shut : function() {
             var
-                it0 = 0,
-                tm0 = ['sdm__row_is_opened', 'sdm__rows_are_opened', 'sdm__col_is_opened'],
-                tm1 = this.gui.root.querySelectorAll('.' + tm0.join(',.')),
-                tm2 = null;
+                it0   = 0,
+                node  = null,
+                nodes = this.gui.get('opened');
 
-            if (it0 = tm1.length) {
+            if (it0 = nodes.length) {
                 while (--it0 > -1) {
-                    tm2 = tm1[it0];
-                    tm2.className = tm2.className.replace(
-                                        new RegExp('\\s(' + tm0.join('|') + ')'),
-                                    '');
+                    this.gui.mod(nodes[it0], '(is|are)', 'opened', true);
                 }
             }
 
@@ -869,11 +878,11 @@ var SDM = SDM || (function() {
 
             if (
                 id &&
-                (row = this.gui.rows['..'][id]) &&
+                (row = this.gui.get('rows', id)) &&
                 (row = row.firstChild) &&
                 row.className.indexOf('__row') != -1
             ) {
-                this.open(row.getAttribute('data-id'));
+                this.open(this.gui.get('id', row));
             }
 
             return this;
@@ -900,12 +909,13 @@ SDM.Gui = SDM.Gui || (function() {
      * @function create
      *
      * @param {object} args
+     * @param {object} parent
      */
     function
-        self(args) {
+        self(args, parent) {
             // Always return an instance of module
             if (!(this instanceof self)) {
-                return new self(args);
+                return new self(args, parent);
             }
 
             var
@@ -914,6 +924,9 @@ SDM.Gui = SDM.Gui || (function() {
                 node  = args.wrapper,
                 attrs = null,
                 parts = ['name', 'wait', 'hide', 'hint'];
+
+            // Link to a parent instance
+            this.parent = parent;
 
             // Try to fetch the wrapper DOM node
             if (args.wrapper instanceof HTMLElement) {
@@ -951,24 +964,8 @@ SDM.Gui = SDM.Gui || (function() {
                 self.create(attrs, part.match(/(text|exit)/) ? find : node);
             }
 
-            // Columns stack
-            this.cols = [];
-            this.cols['..'] = self.create({
-                className : 'sdm__cols',
-                data      : {
-                                limit : typeof args.cols_num == 'number' ?
-                                args.cols_num :
-                                3
-                            }
-            }, node);
-            this._col(0);
-
-            // Rows and groups stack
-            this.rows = {'..' : {}};
-            this.rows['..']['|'] = self.create({
-                className : 'sdm__rows',
-                data      : {id : '|'}
-            }, this.cols[0]);
+            // Add the columns wrapper
+            this.add('cols', this.root.firstChild, args.cols_num);
         }
 
     /**
@@ -1039,34 +1036,16 @@ SDM.Gui = SDM.Gui || (function() {
     }
 
     /**
-     * @property cols
-     * @property mode
      * @property root
-     * @property rows
-     * @function _box
-     * @function _col
-     * @function _row
+     * @property parent
+     * @function add
+     * @function get
+     * @function mod
+     * @function kill
+     * @function move
      * @function push
-     * @function find
-     * @function halt
-     * @function hide
-     * @function turn
-     * @function show
-     * @function wait
      */
     self.prototype = {
-        /**
-         * Stack of created cols and cols wrapper DOM node
-         *
-         * @type {object}
-         */
-        cols : null,
-        /**
-         * Counter badge and search exit button DOM node
-         *
-         * @type {object}
-         */
-        exit : null,
         /**
          * Root DOM element
          *
@@ -1074,88 +1053,144 @@ SDM.Gui = SDM.Gui || (function() {
          */
         root : null,
         /**
-         * Stack of created rows and rows groups DOM node
+         * Link to the parent module instance
          *
          * @type {object}
          */
-        rows : null,
+        parent : null,
         /**
-         * Add a row content preview
+         * Create a row, rows group, column or columns wrapper
          *
-         * @private
+         * @param {string}        what
+         * @param {object}        where
+         * @param {string|object} args
          *
-         * @param {object} data
+         * @return {object}
          */
-        _box : function(data) {
-            // Create a row group if not exist
-            if (!this.rows['..'][data.pid]) {
-                this.rows['..'][data.pid] = self.create({
-                    className : 'sdm__rows',
-                    data      : {id : data.pid}
-                }, this.cols[data.deep]);
+        add : function(what, where, args) {
+            switch (what) {
+                // Create a preview block
+                case 'box':
+                    return self.create({
+                        className : 'sdm__box',
+                        innerHTML : args
+                    }, where);
+                break;
+                // Create a column DOM node
+                case 'col':
+                    return self.create({
+                        id        : 'sdm_' + this.parent.id + '_col_' + args,
+                        className : 'sdm__col'
+                    }, where);
+                break;
+                // Create a row DOM node
+                case 'row':
+                    return self.create({
+                        id        : 'sdm_' + this.parent.id + '_row_' + args.id,
+                        title     : args.name,
+                        className : 'sdm__row' + (args.dead ? ' sdm__row_data_dead' : ''),
+                    }, where);
+                break;
+                // Create a columns wrapper DOM node
+                case 'cols':
+                    return self.create({
+                        className : 'sdm__cols sdm__cols_limit_' +
+                                    (typeof args == 'number' ? args : 3)
+                    }, where);
+                break;
+                // Create a rows group DOM node
+                case 'rows':
+                    return self.create({
+                        id        : 'sdm_' + this.parent.id + '_rows_' + args,
+                        className : 'sdm__rows'
+                    }, where);
+                break;
             }
 
-            // Create a row
-            this.rows[data.id] = self.create({
-                className : 'sdm__box',
-                innerHTML : data.html
-            }, this.rows['..'][data.pid]);
+            return null;
         },
         /**
-         * Add a column
+         * Get DOM element(s) or dom property
          *
-         * @private
+         * @param {string}        what
+         * @param {string|object} from
          *
-         * @param {number} deep
+         * @return {string|object}
          */
-        _col : function(deep) {
-            var
-                ln0 = this.cols.length;
-
-            // Create the needed number of columns
-            if (deep >= ln0) {
-                this.cols[ln0] = self.create({
-                    className : 'sdm__col',
-                    data      : {id : deep}
-                }, this.cols['..']);
+        get : function(what, args) {
+            switch (what) {
+                // Get a clean id of the row or rows group
+                case 'id':
+                    return (args instanceof HTMLElement ? args.id : args).
+                           replace(/sdm_[^_]*_[^_]*_/, '');
+                break;
+                // Get the column node
+                case 'col':
+                    return self.parent.document.getElementById(
+                        'sdm_' + this.parent.id + '_col_' + args
+                    );
+                break;
+                // Get the row node
+                case 'row':
+                    return self.parent.document.getElementById(
+                        'sdm_' + this.parent.id + '_row_' + args
+                    );
+                break;
+                // Get the columns wrapper node
+                case 'cols':
+                    return this.root.querySelector('.sdm__cols');
+                break;
+                // Get the rows group node
+                case 'rows':
+                    return self.parent.document.getElementById(
+                        'sdm_' + this.parent.id + '_rows_' + args
+                    );
+                break;
+                // Get the very first row
+                case 'first':
+                    return this.root.querySelector(
+                        '.sdm__row:first-child'
+                    );
+                break;
+                // Get all displayed columns, rows groups and rows
+                case 'opened':
+                    return this.root.querySelectorAll(
+                        '.sdm__col_is_opened,' +
+                        '.sdm__row_is_opened,' +
+                        '.sdm__rows_are_opened'
+                    );
+                break;
+                // Get all selected rows
+                case 'holded':
+                    return this.root.querySelectorAll(
+                        '.sdm__row_is_holded'
+                    );
+                break;
             }
-        },
-        /**
-         * Add a row
-         *
-         * @private
-         *
-         * @param {object} data
-         */
-        _row : function(data) {
-            // Create a row group if not exist
-            if (!this.rows['..'][data.pid]) {
-                this.rows['..'][data.pid] = self.create({
-                    className : 'sdm__rows',
-                    data      : {id : data.pid}
-                }, this.cols[data.deep]);
-            }
 
-            // Create a row
-            this.rows[data.id] = self.create({
-                title     : data.name,
-                className : 'sdm__row' + (data.dead ? ' sdm__row_data_dead' : ''),
-                data      : {id : data.id, seek : data.seek}
-            }, this.rows['..'][data.pid]);
+            return null;
         },
         /**
-         * Hide progressbar
+         * Deselect the row
+         *
+         * @param {object}            node
+         * @param {string}            as
+         * @param {string}            is
+         * @param {undefined|boolean} rm
          */
-        halt : function() {
-            this.root.className = this.root.className.
-                                  replace(/\s*sdm_is_waiting/, '');
-        },
-        /**
-         * Hide Gui window
-         */
-        hide : function() {
-            this.root.className = this.root.className.
-                                  replace(/\s*sdm_is_observing/, '');
+        mod : function(node, as, is, rm) {
+            node.className = node.className.replace(
+                new RegExp((
+                    rm === true ?
+                    '\\s*sdm(__\\S+)?_' + as + '_' + is :
+                    '^sdm(__\\S*)?'
+                )),
+                (
+                    rm === true ?
+                    '' :
+                    'sdm$1 sdm$1_' + as + (is ? '_' + is : '')
+                )
+            );
         },
         /**
          * Remove an instance
@@ -1165,20 +1200,15 @@ SDM.Gui = SDM.Gui || (function() {
         /**
          * Scroll to the chosen column
          *
-         * @param {string}         id
-         * @param {boolean|number} y
+         * @param {object}            at
+         * @param {undefined|boolean} yoff
          */
-        move : function(id, y) {
+        move : function(row, yoff) {
             var
-                col = null,
-                row = this.rows[id];
+                col = null;
 
-            if (row) {
-                // Get the previous or the current column
-                col = row.parentNode.parentNode;
-
-                // Don't make a vertical scroll on click
-                if (!y) {
+            if (row && (col = row.parentNode.parentNode)) {
+                if (!yoff) {
                     col.scrollTop = row.offsetTop;
                 }
 
@@ -1188,87 +1218,78 @@ SDM.Gui = SDM.Gui || (function() {
         /**
          * Create cols and rows
          *
-         * @param {object} data
-         * @param {number} pid
-         * @param {number} _deep
+         * @param {object}           data
+         * @param {number}           pid
+         * @param {undefined|number} _deep
+         * @param {undefined|object} _cols
          */
-        push : function(data, pid, _deep) {
+        push : function(data, pid, _deep, _cols) {
             pid  = pid ? pid : '-';
 
             var
                 it0    = -1,
+                ln0    = data.length,
                 deep   = _deep && typeof _deep == 'number' ? _deep : 0,
                 type   = typeof data,
+                col    = this.get('col', deep),
+                cols   = _cols instanceof HTMLElement ? _cols : this.get('cols'),
                 item   = null,
-                parent = this.rows[pid];
+                rows   = this.get('rows', pid),
+                parent = this.get('row', pid);
 
-            // 
-            if (parent && parent.className.indexOf('_data_loading')) {
-                parent.className = parent.className.replace(
-                    /\s*sdm__row_data_loading/,
-                    ''
-                );
+            // Create a new column if not exist
+            if (!col) {
+                col = this.add('col', cols, deep)
             }
 
-            // Switch before
+            // Create a new rows group if not exist
+            if (!rows) {
+                rows = this.add('rows', col, pid);
+            }
+
+            // Switch between the rows subcontent types
             switch (type) {
-                // Create a row
+                // Subcontent is rows list
                 case 'object':
+                    // 
                     if (parent) {
-                        parent.className += ' sdm__row_data_rows';
+                        this.mod(parent, 'data', 'loading', true);
+                        this.mod(parent, 'data', 'rows');
                     }
 
-                    while (++it0 < data.length) {
+                    // 
+                    while (++it0 < ln0) {
                         item = data[it0];
 
-                        this._col(deep);
-                        this._row({
+                        // 
+                        this.add('row', rows, {
                             dead : item.dead ? true : false,
-                            deep : deep,
                             id   : item.id,
-                            pid  : pid,
                             name : item.name,
                             seek : item.seek ? item.seek : item.name.toLowerCase()
                         });
 
+                        // 
                         if (item.data) {
-                            this.push(item.data, item.id, deep + 1);
+                            this.push(item.data, item.id, deep + 1, cols);
                         }
                     }
                 break;
-                // Create html preview
+                // Subcontent is html
                 case 'string':
                     if (parent) {
-                        parent.className += ' sdm__row_data_html';
+                        this.mod(parent, 'data', 'loading', true);
+                        this.mod(parent, 'data', 'html');
+                        this.add('box', rows, data);
                     }
-
-                    this._col(deep);
-                    this._box({
-                        deep : deep,
-                        pid  : pid,
-                        html : data
-                    });
-                    
                 break;
                 // Subcontent should be loaded
                 case 'boolean':
                     if (parent && type) {
-                        parent.className += ' sdm__row_data_load';
+                        this.mod(parent, 'data', 'load');
                     }
                 break;
             }
-        },
-        /**
-         * Show Gui window
-         */
-        show : function() {
-            this.root.className += ' sdm_is_observing';
-        },
-        /**
-         * Show progressbar
-         */
-        wait : function() {
-            this.root.className += ' sdm_is_waiting';
         }
     };
 
@@ -1286,32 +1307,31 @@ SDM.Events = SDM.Events || (function() {
     /**
      * @constructor
      *
-     * @property _auto
      * @property parent
      * @function off
      * @function pub
      * @function sub
      *
-     * @param {object} root
      * @param {object} handlers
+     * @param {object} parent
      */
     function
-        self(root, handlers) {
+        self(handlers, parent) {
             // Always return an instance of module
             if (!(this instanceof self)) {
-                return new self(root, handlers);
+                return new self(handlers, parent);
             }
 
             var
                 it0     = 0,
                 event   = '',
-                auto    = this._auto.match(/([^:;\d]+)/g),
+                auto    = this.auto.match(/([^:;\d]+)/g),
                 handler = null;
 
 
             // Setup main properties
-            this._root   = root;
-            this._saved  = {};
+            this._saved = {};
+            this.parent = parent;
 
             // Save autoevents handlers if exist
             if (it0 = auto.length) {
@@ -1381,9 +1401,9 @@ SDM.Events = SDM.Events || (function() {
     }
 
     /**
-     * @property _auto
-     * @property _root
+     * @property auto
      * @property _saved
+     * @property parent
      * @function off
      * @function pub
      * @function sub
@@ -1399,21 +1419,13 @@ SDM.Events = SDM.Events || (function() {
          *
          * @type {string}
          */
-        _auto : 'drawstart;drawfinish;' +
+        auto : 'drawstart;drawfinish;' +
                 'dropfail;dropstart:5;dropfinish;' +
                 'holdfail;holdstart:5;holdfinish;' +
                 'loadfail;loadstart:5;loadfinish;' +
                 'openfail;openstart:5;openfinish;' +
                 'shutstart;shutfinish;' +
                 'keyup;keydown;mousedown',
-        /**
-         * Instance DOM root
-         *
-         * @private
-         *
-         * @type {object}
-         */
-        _root : null,
         /**
          * Saved events handlers stack (for clean removing)
          *
@@ -1422,6 +1434,12 @@ SDM.Events = SDM.Events || (function() {
          * @type {object}
          */
         _saved : null,
+        /**
+         * Link to the parent module instance
+         *
+         * @type {object}
+         */
+        parent : null,
         /**
          * Remove an event
          *
@@ -1438,7 +1456,7 @@ SDM.Events = SDM.Events || (function() {
                     (
                         event.indexOf('keydown') == 0 ?
                         self.parent.document.body :
-                        this._root
+                        this.parent.gui.root
                     ),
                     this._saved[event].handler
                 );
@@ -1456,7 +1474,7 @@ SDM.Events = SDM.Events || (function() {
                     (
                         event.indexOf('keydown') == 0 ?
                         self.parent.document.body :
-                        this._root
+                        this.parent.gui.root
                     ),
                     event,
                     data
@@ -1473,7 +1491,7 @@ SDM.Events = SDM.Events || (function() {
         sub : function(event, handler, delay) {
             var
                 alias  = '',
-                source = this._auto.match(new RegExp('(' + event + ')(:(\\d+))*(;|$)'));
+                source = this.auto.match(new RegExp('(' + event + ')(:(\\d+))*(;|$)'));
 
             // Main events should be added once only
             if (
@@ -1494,7 +1512,11 @@ SDM.Events = SDM.Events || (function() {
 
                 // Save the real event
                 self.sub(
-                    alias.indexOf('key') == 0 ? self.parent.document.body : this._root,
+                    (
+                        alias.indexOf('key') == 0 ?
+                        self.parent.document.body :
+                        this.parent.gui.root
+                    ),
                     alias,
                     handler
                 );
