@@ -1319,23 +1319,28 @@ SDM.Gui = SDM.Gui || (function() {
                     while (++it0 < ln0) {
                         item = data[it0];
 
-                        // Create the rows
+                        // Render item
                         if (item instanceof HTMLElement) {
                             rows.appendChild(item);
                         } else {
                             this.add('row', rows, {
-                                dead : item[this.hull.dead] ? true : false,
-                                id   : item[this.hull.id],
-                                name : item[this.hull.name],
-                                seek : item[this.hull.seek] ?
-                                       item[this.hull.seek] :
-                                       item[this.hull.name].toLowerCase()
+                                dead : item[this.keys.dead] ? true : false,
+                                id   : item[this.keys.id],
+                                name : item[this.keys.name],
+                                seek : item[this.keys.seek] ?
+                                       item[this.keys.seek] :
+                                       item[this.keys.name].toLowerCase()
                             });
                         }
 
-                        // 
-                        if (item.data) {
-                            this.push(item.data, item.id, deep + 1, cols);
+                        // Render subitems
+                        if (item[this.keys.data]) {
+                            this.push(
+                                item[this.keys.data],
+                                item[this.keys.id],
+                                deep + 1,
+                                cols
+                            );
                         }
                     }
                 break;
