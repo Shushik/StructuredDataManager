@@ -90,8 +90,8 @@ var SDM = SDM || (function() {
      * @function _live
      * @function _pull
      * @function _failed
-     * @function _pulled
      * @function _opened
+     * @function _pulled
      * @function _keydown
      * @function _mousedown
      * @function back
@@ -100,11 +100,13 @@ var SDM = SDM || (function() {
      * @function hold
      * @function init
      * @function kill
+     * @function seek
      * @function next
      * @function open
      * @function pull
      * @function push
      * @function quit
+     * @function seek
      * @function show
      * @function shut
      * @function step
@@ -137,11 +139,17 @@ var SDM = SDM || (function() {
          */
         holded : '',
         /**
-         * Currently cursored row id
+         * Id of the row on which the cursor has been set
          *
          * @type {string}
          */
         opened : '',
+        /**
+         * Search text
+         *
+         * @type {string}
+         */
+        seeked : '',
         /**
          * Binded instance methods stack
          *
@@ -288,7 +296,7 @@ var SDM = SDM || (function() {
 
                 // Reset the timer for the start event
                 this.events.halt(action + 'start');
-    
+
                 // Turn the progress bar off
                 this.gui.mod(this.gui.root, 'is', 'waiting', false);
 
@@ -644,6 +652,14 @@ var SDM = SDM || (function() {
             self[this.id] = null;
         },
         /**
+         * Clear the search results
+         *
+         * @return {object}
+         */
+        lose : function() {
+            return this;
+        },
+        /**
          * Set cursor at the downer row
          *
          * @return {object}
@@ -822,7 +838,7 @@ var SDM = SDM || (function() {
             if (row && (id = this.gui.get('id', row.parentNode))) {
                 if (id != '-') {
                     row.className = row.className.replace(/\s*sdm__row_is_opened/, '');
-    
+
                     if (
                         (row = this.gui.get('row', id))
                     ) {
@@ -831,6 +847,16 @@ var SDM = SDM || (function() {
                 }
             }
 
+            return this;
+        },
+        /**
+         * Find a word in the rows
+         *
+         * @param {string} what
+         *
+         * @return {object}
+         */
+        seek : function(what) {
             return this;
         },
         /**
@@ -920,11 +946,10 @@ SDM.Gui = SDM.Gui || (function() {
             }
 
             var
-                part  = '',
+                al0   = '',
                 find  = null,
                 node  = args.wrapper,
-                attrs = null,
-                parts = ['name', 'wait', 'hide', 'hint'];
+                attrs = null;
 
             // Link to a parent instance
             this.parent = parent;
@@ -943,26 +968,21 @@ SDM.Gui = SDM.Gui || (function() {
                 className : 'sdm'
             }, node);
 
-            // Visible window DOM node
-            node = self.create({
-                className : 'sdm__unit'
-            }, node);
+            node = this.add('unit', node);
+            this.add('name', node, args);
+            this.add('wait', node, args);
+            this.add('hide', node, args);
+            this.add('hint', node, args);
 
-            // Create text nodes
-            while (part = parts.shift()) {
-                attrs = {className : 'sdm__' + part};
+            // Save the custom fields names schema
+            if (args.keys) {
+                this.keys = {};
 
-                if (typeof args[part + '_txt'] == 'string') {
-                    attrs.title = args[part + '_txt'];
-                } else if (part == 'hint') {
-                    attrs.title = 'Single click — expand; double click — select; ' +
-                                  'Ctrl + double click — multi select or Cmd + double click; ' +
-                                  'Esc — close'
-                } else if (part == 'find') {
-                    attrs.contenteditable = true;
+                for (al0 in self.prototype.keys) {
+                    this.keys[al0] = args.keys[al0] ?
+                                     args.keys[al0] :
+                                     self.prototype.keys[al0];
                 }
-
-                self.create(attrs, part.match(/(text|exit)/) ? find : node);
             }
 
             // Add the columns wrapper
@@ -1037,6 +1057,7 @@ SDM.Gui = SDM.Gui || (function() {
     }
 
     /**
+     * @property look
      * @property root
      * @property parent
      * @function add
@@ -1047,6 +1068,12 @@ SDM.Gui = SDM.Gui || (function() {
      * @function push
      */
     self.prototype = {
+        /**
+         * Data fields custom names
+         *
+         * @type {object}
+         */
+        keys : {id : 'id', data : 'data', dead : 'dead', name : 'name', seek : 'seek'},
         /**
          * Root DOM element
          *
@@ -1069,6 +1096,11 @@ SDM.Gui = SDM.Gui || (function() {
          * @return {object}
          */
         add : function(what, where, args) {
+            args = args || {};
+
+            var
+                temp = null;
+
             switch (what) {
                 // Create a preview block
                 case 'box':
@@ -1090,6 +1122,11 @@ SDM.Gui = SDM.Gui || (function() {
                         id        : 'sdm_' + this.parent.id + '_row_' + args.id,
                         title     : args.name,
                         className : 'sdm__row' + (args.dead ? ' sdm__row_data_dead' : ''),
+                        data      : {
+                                        seek : args.seek ?
+                                               args.seek + '' :
+                                               args.name.toLowerCase()
+                                    }
                     }, where);
                 break;
                 // Create a columns wrapper DOM node
@@ -1105,6 +1142,28 @@ SDM.Gui = SDM.Gui || (function() {
                         id        : 'sdm_' + this.parent.id + '_rows_' + args,
                         className : 'sdm__rows'
                     }, where);
+                break;
+                // Create GUI parts and controls
+                case 'hide':
+                case 'hint':
+                case 'name':
+                case 'unit':
+                case 'wait':
+                    temp = {className : 'sdm__' + what};
+
+                    if (typeof args[what + '_txt'] == 'string') {
+                        temp.title = args[what + '_txt'];
+                    } else if (what == 'hint') {
+                        temp.title = 'Single click — expand; double click — select; ' +
+                                     'Ctrl + double click — multi select or Cmd + double click; ' +
+                                     'Esc — close'
+                    }
+
+                    if (what == 'find') {
+                        temp.contenteditable = true;
+                    }
+
+                    return self.create(temp, where);
                 break;
             }
 
@@ -1144,18 +1203,25 @@ SDM.Gui = SDM.Gui || (function() {
                         '.sdm__' + what + '-child'
                     );
                 break;
-                // Get all displayed columns, rows groups and rows
-                case 'opened':
+                // Get the rows matched to the search criteria
+                case 'row:match':
                     return this.root.querySelectorAll(
-                        '.sdm__col_is_opened,' +
-                        '.sdm__row_is_opened,' +
-                        '.sdm__rows_are_opened'
+                        '.sdm__row[data-seek^="' + what + '"],' +
+                        '.sdm__row[data-seek*="' + what + '"]'
                     );
                 break;
                 // Get all selected rows
                 case 'holded':
                     return this.root.querySelectorAll(
                         '.sdm__row_is_holded'
+                    );
+                break;
+                // Get all displayed columns, rows groups and rows
+                case 'opened':
+                    return this.root.querySelectorAll(
+                        '.sdm__col_is_opened,' +
+                        '.sdm__row_is_opened,' +
+                        '.sdm__rows_are_opened'
                     );
                 break;
             }
@@ -1243,23 +1309,29 @@ SDM.Gui = SDM.Gui || (function() {
             switch (type) {
                 // Subcontent is rows list
                 case 'object':
-                    // 
+                    // Set the row subitems type
                     if (parent) {
                         this.mod(parent, 'data', 'loading', true);
                         this.mod(parent, 'data', 'rows');
                     }
 
-                    // 
+                    // Save the rows
                     while (++it0 < ln0) {
                         item = data[it0];
 
-                        // 
-                        this.add('row', rows, {
-                            dead : item.dead ? true : false,
-                            id   : item.id,
-                            name : item.name,
-                            seek : item.seek ? item.seek : item.name.toLowerCase()
-                        });
+                        // Create the rows
+                        if (item instanceof HTMLElement) {
+                            rows.appendChild(item);
+                        } else {
+                            this.add('row', rows, {
+                                dead : item[this.hull.dead] ? true : false,
+                                id   : item[this.hull.id],
+                                name : item[this.hull.name],
+                                seek : item[this.hull.seek] ?
+                                       item[this.hull.seek] :
+                                       item[this.hull.name].toLowerCase()
+                            });
+                        }
 
                         // 
                         if (item.data) {
@@ -1269,11 +1341,14 @@ SDM.Gui = SDM.Gui || (function() {
                 break;
                 // Subcontent is html
                 case 'string':
+                    // Set the row subitems type and save preview HTML
                     if (parent) {
                         this.mod(parent, 'data', 'loading', true);
                         this.mod(parent, 'data', 'html');
-                        this.add('box', rows, data);
                     }
+
+                    // Save the preview html
+                    this.add('box', rows, data);
                 break;
                 // Subcontent should be loaded
                 case 'boolean':
@@ -1412,12 +1487,14 @@ SDM.Events = SDM.Events || (function() {
          * @type {string}
          */
         auto : 'drawstart;drawfinish;' +
-                'dropfail;dropstart:5;dropfinish;' +
-                'holdfail;holdstart:5;holdfinish;' +
-                'loadfail;loadstart:5;loadfinish;' +
-                'openfail;openstart:5;openfinish;' +
-                'shutstart;shutfinish;' +
-                'keyup;keydown;mousedown',
+               'dropfail;dropstart:5;dropfinish;' +
+               'holdfail;holdstart:5;holdfinish;' +
+               'loadfail;loadstart:5;loadfinish;' +
+               'openfail;openstart:5;openfinish;' +
+               'seelfail;seekstart:5;seekfinish;' +
+               'losestart;losefinish;' +
+               'shutstart;shutfinish;' +
+               'keyup;keydown;mousedown',
         /**
          * Saved events handlers stack (for clean removing)
          *
