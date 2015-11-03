@@ -79,19 +79,19 @@ var SDM = SDM || (function() {
 
     /**
      * @property _binded
-     * @property _timers
-     * @property _delayed
      * @property id
      * @property gui
+     * @property mode
      * @property events
      * @property holded
      * @property opened
-     * @property pulling
      * @function _live
      * @function _pull
      * @function _failed
      * @function _opened
-     * @function _pulled
+     * @function _droped
+     * @function _holded
+     * @function _loaded
      * @function _keydown
      * @function _mousedown
      * @function back
@@ -100,7 +100,7 @@ var SDM = SDM || (function() {
      * @function hold
      * @function init
      * @function kill
-     * @function seek
+     * @function lose
      * @function next
      * @function open
      * @function pull
@@ -113,11 +113,17 @@ var SDM = SDM || (function() {
      */
     self.prototype = {
         /**
-         * Common loading indicator
+         * Mouse event indicator
          *
          * @type {boolean}
          */
-        pulling : false,
+        _mouse : false,
+        /**
+         * Keyboard event indicator
+         *
+         * @type {boolean}
+         */
+        _keyboard : false,
         /**
          * Instance id
          *
@@ -125,13 +131,13 @@ var SDM = SDM || (function() {
          */
         id : 0,
         /**
-         * Loading processes queue
+         * Module mode
          *
          * @private
          *
          * @type {string}
          */
-        _delayed : '',
+        mode : 'view',
         /**
          * Selected rows ids
          *
@@ -158,14 +164,6 @@ var SDM = SDM || (function() {
          * @type {object}
          */
         _binded : null,
-        /**
-         * Instance timers stack
-         *
-         * @private
-         *
-         * @type {object}
-         */
-        _timers : null,
         /**
          * Gui operations module instance
          *
@@ -205,6 +203,15 @@ var SDM = SDM || (function() {
             // Get a short Gui part name
             part = part[0].replace(/\s[\s\S]*$/, '').replace(/sdm__/, '');
 
+            // Set event source indicator
+            if (type.indexOf('mouse') == 0) {
+                this._mouse    = true;
+                this._keyboard = false;
+            } else if (type.indexOf('key') == 0) {
+                this._mouse    = false;
+                this._keyboard = true;
+            }
+
             // Call the event subhandler
             if (this['_' + type]) {
                 this['_' + type]({
@@ -219,189 +226,172 @@ var SDM = SDM || (function() {
             return this;
         },
         /**
-         * Initiate row subcontent loading
-         *
-         * @private
+         * Initiate DOM search
          */
-        _open : function() {
+        _seek : function() {
             var
-                row = this.gui.get('row', this.opened);
+                it0  = -1,
+                ln0  = 0,
+                row  = null,
+                fake = null,
+                root = this.gui.get('rows', '-'),
+                rows = null;
 
-            // Mark the row with the loading status
-            this.gui.mod(row, 'data', 'load', true);
-            this.gui.mod(row, 'data', 'loading');
+            // Initiate the search mode
+            if (this.mode != 'seek') {
+                // Prepare main properties and remove cursors
+                this.shut();
+                this.mode   = 'seek';
+                this.opened = '';
 
-            // Run external actions
-            this.pull(this.opened, 'open');
-        },
-        /**
-         * Start data loading process
-         *
-         * @private
-         */
-        _pull : function() {
-            var
-                id     = '',
-                action = '',
-                args   = null;
+                // Hide Gui window
+                this.gui.mod(this.gui.root, 'mode', 'view', false);
+                this.gui.mod(this.gui.root, 'mode', 'seek');
 
-            // Get the id and action alias
-            if (
-                (action = this._delayed.split(/;/)) &&
-                action.length &&
-                (action = action[0].split(':'))
-            ) {
-                id     = action[0];
-                action = action[1];
-            } else {
-                return;
+                // 
+                fake = this.gui.get('rows', '|');
+                root.id = root.id.replace('_-', '_|');
+                fake.id = fake.id.replace('_|', '_-');
+                root = fake;
             }
 
-            // Set the pulling process indicator
-            this.pulling = true;
+            // Clean previous results
+            root.innerHTML = '';
 
-            // Turn the progress bar on
-            this.gui.mod(this.gui.root, 'is', 'waiting');
+            // 
+            if (
+                (rows = this.gui.get('row:match', this.seeked.toLowerCase())) &&
+                (ln0 = rows.length)
+            ) {
+                while (++it0 < ln0) {
+                    row = rows[it0].cloneNode();
+                    this.gui.add('raw', root, row);
+                }
+            }
 
-            // Set the timer for the start event
-            this.events.wait(action + 'start', {
-                id   : id,
-                done : this._binded.pulled,
-                fail : this._binded.failed,
-                hide : this._binded.hide,
-                show : this._binded.show
-            });
+            // Set counter badge
+            this.gui.find.parentNode.title = ln0;
+        },
+        /**
+         * Keyup event handler
+         *
+         * @param {object} event
+         */
+        _keyup : function(event) {
+            var
+                id = '';
+
+            // Cancel the search action
+            this.events.halt('keyup');
+
+            switch (event.code) {
+                // 
+                case 13:
+                    id = this.opened;
+                    this.lose().open(id);
+                break;
+                // Hide GUI window on Esc
+                case 27:
+                    this.lose().next();
+                break;
+                // Set cursor at the downer row
+                case 40:
+                    event.root.preventDefault();
+                    this.gui.find.blur();
+                    this.next();
+                break;
+                // 
+                default:
+                    if (this.seeked != event.node.value) {
+                        this.seeked = event.node.value;
+
+                        this.events.wait(
+                            'keyup',
+                            this._binded.seek,
+                            300
+                        );
+                    }
+                break;
+            }
+        },
+        /**
+         * Finish the holding process
+         *
+         * @private
+         *
+         * @param {string}           id
+         * @param {undefined|object} data
+         */
+        _droped : function(id) {
+            this.push(id, null, 'drop');
         },
         /**
          * Common error handler
          *
          * @param {undefined|string} text
          */
-        _failed : function(text) {
-            var
-                id     = '',
-                action = '',
-                row    = null,
-                queue  = null;
+        _failed : function(id, text) {
+            // Turn the progress bar off
+            this.gui.mod(this.gui.root, 'is', 'waiting', false);
 
-            if ((
-                this.pulling &&
-                (queue = this._delayed.split(/;/)) &&
-                queue.length &&
-                (action = queue.shift().split(':'))
-            )) {
-                // Get the id and action alias
-                id     = action[0];
-                action = action[1];
+            // Tell subscribers the action has been finished
+            this.events.pub('fail', {
+                id   : id,
+                hide : this._binded.hide,
+                show : this._binded.show
+            });
 
-                // Reset the timer for the start event
-                this.events.halt(action + 'start');
+            // Remove loading class
+            if (typeof id == 'string' && (row = this.gui.get('row', id))) {
+                this.gui.mod(row, 'data', 'loading', false);
+                this.gui.mod(row, 'data', 'dead');
 
-                // Turn the progress bar off
-                this.gui.mod(this.gui.root, 'is', 'waiting', false);
-
-                // Reset the pulling process indicator
-                this.pulling = false;
-
-                // Update the queue
-                this._delayed = queue.join(';');
-
-                // Tell subscribers the action has been finished
-                this.events.pub((action + 'fail'), {
-                    id   : id,
-                    hide : this._binded.hide,
-                    show : this._binded.show
-                });
-
-                // Remove loading class
-                if (row = this.gui.get('row', id)) {
-                    row.className = row.className.replace(
-                        /sdm__row_data_loading/,
-                        'sdm__row_data_dead'
-                    );
-                }
-
-                // Deselect row
-                if (action.indexOf('hold') > -1) {
+                if (row.className.indexOf('_is_holded')) {
                     this.drop(id);
                 }
-
-                // Load next item in queue
-                if (queue.length) {
-                    this._pull();
-                }
             }
         },
         /**
-         * Finish the data loading process
+         * Finish the holding process
          *
          * @private
          *
-         * @param {object} data
-         */
-        _pulled : function(data) {
-            var
-                id     = '',
-                action = '',
-                queue  = null;
-
-            if ((
-                this.pulling &&
-                (queue = this._delayed.split(';')) &&
-                queue.length &&
-                (action = queue.shift().split(':'))
-            )) {
-                // Get the id and action alias
-                id     = action[0];
-                action = action[1];
-
-                // Reset the timer for the start event
-                this.events.halt(action + 'start');
-
-                // Turn the progress bar off
-                this.gui.mod(this.gui.root, 'is', 'waiting', true);
-
-                // Reset the pulling process indicator
-                this.pulling = false;
-
-                // Update the queue
-                this._delayed = queue.join(';');
-
-                // Tell subscribers the action has been finished
-                this.events.pub((action + 'finish'), {
-                    id   : id,
-                    hide : this._binded.hide,
-                    show : this._binded.show
-                });
-
-                // Add the rows
-                if (action.indexOf('hold') == -1 && data) {
-                    this.push(id, data);
-                }
-
-                // Run the related finishing action
-                if (this['_' + action + 'ed']) {
-                    this['_' + action + 'ed']();
-                }
-
-                // Load next item in queue
-                if (queue.length) {
-                    this._pull();
-                }
-            }
-        },
-        /**
-         * Finish the opening of subitems process
-         *
-         * @private
-         *
+         * @param {string}           id
          * @param {undefined|object} data
          */
-        _opened : function(data) {
+        _holded : function(id, data) {
+            this.push(id, data, 'hold');
+        },
+        /**
+         * Finish the loading process
+         *
+         * @private
+         *
+         * @param {string}           id
+         * @param {undefined|object} data
+         */
+        _loaded : function(id, data) {
+            this.push(id, data, 'load');
+        },
+        /**
+         * Finish the opening process
+         *
+         * @private
+         *
+         * @param {string}           id
+         * @param {undefined|object} data
+         */
+        _opened : function(id, data) {
             var
-                rows = this.gui.get('rows', this.opened);
+                rows = null;
 
-            if (rows) {
+            // 
+            if (data) {
+                this.push(id, data, 'open');
+            }
+
+            // 
+            if (this.opened == id && (rows = this.gui.get('rows', id))) {
                 this.gui.mod(rows, 'are', 'opened');
                 this.gui.mod(rows.parentNode, 'is', 'opened');
             }
@@ -412,19 +402,35 @@ var SDM = SDM || (function() {
          * @param {object} event
          */
         _keydown : function(event) {
+            // No need to go further
+            if (event.part == 'find') {
+                return;
+            }
+
+            // Switch between the keycodes
             switch (event.code) {
                 // Select row on Enter
                 case 13:
-                    this.hold(this.opened, event.ctrl);
+                    if (this.mode == 'seek') {
+                        this._keyup(event);
+                    } else {
+                        this.hold(this.opened, event.ctrl);
+                    }
                 break;
                 // Hide GUI window on Esc
                 case 27:
-                    this.hide();
+                    if (this.mode == 'seek') {
+                        this._keyup(event);
+                    } else {
+                        this.hide();
+                    }
                 break;
                 // Set cursor at the parent row
                 case 37:
-                    event.root.preventDefault();
-                    this.quit();
+                    if (this.mode != 'seek') {
+                        event.root.preventDefault();
+                        this.quit();
+                    }
                 break;
                 // Set cursor at the upper row
                 case 38:
@@ -433,8 +439,10 @@ var SDM = SDM || (function() {
                 break;
                 // Set cursor at the first child row
                 case 39:
-                    event.root.preventDefault();
-                    this.step();
+                    if (this.mode != 'seek') {
+                        event.root.preventDefault();
+                        this.step();
+                    }
                 break;
                 // Set cursor at the downer row
                 case 40:
@@ -449,30 +457,44 @@ var SDM = SDM || (function() {
          * @param {object} event
          */
         _mousedown : function(event) {
+            var
+                id = '';
+
             switch (event.part) {
-                // 
+                // Row has been clicked
                 case 'row':
-                    if (this._timers.click) {
-                        // Cancel the cursor set
-                        self.parent.clearTimeout(this._timers.click);
+                    id = this.gui.get('id', event.node);
 
+                    if (this.events.halt('click') && id == this.opened) {
                         // Select a row
-                        this.hold(this.opened, event.ctrl);
-
-                        // Remove mousedown timer id
-                        this._timers.click = undefined;
+                        if (this.mode == 'seek') {
+                            this.lose().open(this.gui.get('id', event.node));
+                        } else {
+                            this.hold(this.opened, event.ctrl);
+                        }
 
                         return;
                     }
 
+                    // No need to go further
+                    if (
+                        this.mode == 'seek' &&
+                        this.gui.get('id', event.node.parentNode) != '-'
+                    ) {
+                        this.lose();
+                    }
+
                     // Get the id for the cursor
-                    this.opened = this.gui.get('id', event.node);
+                    this.opened = id;
 
                     // Delay the cursor set
-                    this._timers.click = self.parent.setTimeout(
-                        this._binded.click,
-                        150
-                    );
+                    this.events.wait('click', this._binded.click, 150);
+                break;
+                // Exit control has been clicked
+                case 'exit':
+                    if (this.mode == 'seek') {
+                        this.lose().next();
+                    }
                 break;
                 // 
                 case 'sdm': case 'hide':
@@ -498,7 +520,7 @@ var SDM = SDM || (function() {
                 (row = row.firstChild) &&
                 row.className.indexOf('__row') != -1
             ) {
-                this.open(this.gui.get('id', row));
+                this.open(row);
             }
 
             return this;
@@ -531,7 +553,7 @@ var SDM = SDM || (function() {
                     id  = this.gui.get('id', row);
 
                     // Deselect the row
-                    this.gui.mod(row, 'is', 'holded', true);
+                    this.gui.mod(row, 'is', 'holded', false);
 
                     this.holded = this.holded.replace(new RegExp('(^|;)' + id, ''));
 
@@ -548,11 +570,18 @@ var SDM = SDM || (function() {
          * @return {object}
          */
         hide : function() {
-            // Hide Gui window
-            this.gui.mod(this.gui.root, 'is', 'observing', true);
+            if (this.mode != 'hide') {
+                // Modify mode
+                this.mode = 'hide';
 
-            // Reset Gui keydown event
-            this.events.off('keydown', this._binded.lived);
+                // Hide Gui window
+                this.gui.mod(this.gui.root, 'mode', 'view', false);
+                this.gui.mod(this.gui.root, 'mode', 'seek', false);
+
+                // Reset Gui keydown event
+                this.events.off('keyup');
+                this.events.off('keydown');
+            }
 
             return this;
         },
@@ -605,22 +634,25 @@ var SDM = SDM || (function() {
          */
         init : function(args) {
             // Reset ids, indicators and stacks
-            this.pulling  = false;
-            this._delayed = '';
-            this.holded   = '';
-            this.opened   = '';
-            this._timers  = {};
-            this.events   = {};
+            this._mouse    = false;
+            this._keyboard = false;
+            this.mode      = 'hide';
+            this.holded    = '';
+            this.opened    = '';
+            this.events    = {};
 
             // Create the proxied methods links stack
             this._binded = {
                 hide   : this.hide.bind(this),
                 live   : this._live.bind(this),
-                open   : this._open.bind(this),
+                seek   : this._seek.bind(this),
                 show   : this.show.bind(this),
                 click  : this.open.bind(this),
+                droped : this._droped.bind(this),
                 failed : this._failed.bind(this),
-                pulled : this._pulled.bind(this)
+                holded : this._holded.bind(this),
+                loaded : this._loaded.bind(this),
+                opened : this._opened.bind(this)
             };
 
             return this;
@@ -657,6 +689,35 @@ var SDM = SDM || (function() {
          * @return {object}
          */
         lose : function() {
+            var
+                fake = this.gui.get('rows', '-'),
+                root = this.gui.get('rows', '|');
+
+            // Initiate the search mode
+            if (this.mode == 'seek') {
+                // Blur the search text element
+                this.gui.find.blur();
+                this.gui.find.value = '';
+                this.gui.find.parentNode.title = 0;
+                this.seeked = '';
+
+                // Prepare main properties and remove cursors
+                this.shut();
+                this.mode   = 'view';
+                this.opened = '';
+
+                // Switch to the view mode
+                this.gui.mod(this.gui.root, 'mode', 'seek', false);
+                this.gui.mod(this.gui.root, 'mode', 'view');
+
+                // Replace 
+                root.id = root.id.replace('_|', '_-');
+                fake.id = fake.id.replace('_-', '_|');
+
+                // Clean results
+                fake.innerHTML = '';
+            }
+
             return this;
         },
         /**
@@ -677,7 +738,7 @@ var SDM = SDM || (function() {
                 (row = row.firstChild) &&
                 row.className.indexOf('__row') != -1
             ) {
-                this.open(this.gui.get('id', row));
+                this.open(row);
             }
 
             return this;
@@ -699,7 +760,7 @@ var SDM = SDM || (function() {
                 this.opened = id;
             } else if (id instanceof HTMLElement) {
                 row = id;
-                id  = this.gui.get('id', row);
+                this.opened = id = this.gui.get('id', row);
             } else if (
                 !this.opened &&
                 (row = this.gui.get('row:first'))
@@ -713,26 +774,29 @@ var SDM = SDM || (function() {
             }
 
             // Clear row subcontent loading timer
-            if (this._timers.open) {
-                self.parent.clearTimeout(this._timers.open);
-                this._timers.open = undefined;
-            }
+            this.events.halt('open')
 
-            // Hide rows and columns
+            // Remove cursors
             this.shut();
 
             //  Switch between the different row behavior
             switch (row.className.replace(/[\s\S]*(data_(html|load|rows)(\s|$))[\s\S]*/g, '$2')) {
                 // Load subitems
                 case 'load':
-                    // Set row subcontent loading timer
-                    this._timers.open = self.parent.setTimeout(this._binded.open, 500);
+                    if (this.mode != 'seek') {
+                        // Mark the row with the loading status
+                        this.gui.mod(row, 'data', 'load', false);
+                        this.gui.mod(row, 'data', 'loading');
+
+                        // Run external actions
+                        this.pull(this.opened, 'open');
+                    }
                 break;
                 // Show subitems
                 case 'html':
                 case 'rows':
                     // Finish the opening of subitems process immediately
-                    this._opened();
+                    this._opened(this.opened);
                 break;
             }
 
@@ -750,10 +814,7 @@ var SDM = SDM || (function() {
             }
 
             // Scroll to the first row in chain
-            this.gui.move(to, (this._timers.click ? true : false));
-
-            // Remove mousedown timer id
-            this._timers.click = undefined;
+            this.gui.move(to, this._mouse);
 
             return this;
         },
@@ -768,62 +829,80 @@ var SDM = SDM || (function() {
         pull : function(id, action) {
             action = typeof action == 'string' ? action : 'load';
 
+            // 
             if (typeof id != 'string' && id != '-') {
                 return this;
             }
 
-            // Save the row id and process name into queue stack
-            if (!this._delayed.match(new RegExp('(^|;)' + id + ':' + action))) {
-                this._delayed += (this._delayed ? ';' : '') + id + ':' + action;
-            }
+            // Turn the progress bar on
+            this.gui.mod(this.gui.root, 'is', 'waiting');
 
-            // Try to run the first element in stack
-            if (!this.pulling) {
-                this._pull();
-            }
+            // Set the timer for the start event
+            this.events.pub(action + 'start', {
+                id   : id,
+                done : this._binded[action + 'ed'],
+                fail : this._binded.failed,
+                hide : this._binded.hide,
+                show : this._binded.show
+            });
 
             return this;
         },
         /**
          * Add the rows
          *
-         * @param {string} id
-         * @param {object} data
+         * @param {string}           id
+         * @param {object}           data
+         * @param {undefined|string} action
          *
          * @return {object}
          */
-        push : function(id, data) {
+        push : function(id, data, action) {
             var
                 deep = 0,
                 type = typeof data,
                 row  = null;
 
-            // Get a row
-            row = this.gui.get('row', id);
+            // Finish started action
+            if (typeof action == 'string') {
+                this.gui.mod(this.gui.root, 'is', 'waiting', false);
 
-            // Tell subscribers the rendering has been started
-            this.events.pub('drawstart', {
-                id   : id,
-                hide : this._binded.hide,
-                show : this._binded.show
-            });
-
-            if (row) {
-                // Get the columns deep level
-                deep = this.gui.get('id', row.parentNode.parentNode);
-                deep -= 0;
-                deep += 1;
+                this.events.pub((action + 'finish'), {
+                    id   : id,
+                    hide : this._binded.hide,
+                    show : this._binded.show
+                });
             }
 
-            // Create cols and rows
-            this.gui.push(data, id, deep);
+            // Render
+            if (data) {
+                // Get a row
+                row = this.gui.get('row', id);
 
-            // Tell subscribers the rendering has been finished
-            this.events.pub('drawfinish', {
-                id   : id,
-                hide : this._binded.hide,
-                show : this._binded.show
-            });
+                // Tell subscribers the rendering has been started
+                this.events.pub('drawstart', {
+                    id   : id,
+                    hide : this._binded.hide,
+                    show : this._binded.show
+                });
+
+                // Get the columns deep level
+                if (row) {
+                    deep = this.gui.get('id', row.parentNode.parentNode);
+                    deep -= 0;
+                    deep += 1;
+                }
+
+                // Create cols and rows
+                this.gui.push(data, id, deep);
+
+                // Tell subscribers the rendering has been finished
+                this.events.pub('drawfinish', {
+                    id   : id,
+                    hide : this._binded.hide,
+                    show : this._binded.show
+                });
+            }
 
             return this;
         },
@@ -857,6 +936,24 @@ var SDM = SDM || (function() {
          * @return {object}
          */
         seek : function(what) {
+            var
+                fake = null,
+                root = this.gui.get('rows', '-');
+
+            // Set the current row id
+            if (typeof what == 'string') {
+                this.seeked = what;
+                this.gui.find.value = what;
+                this.gui.find.focus();
+            } else if (!this.seeked && this.gui.find) {
+                return this;
+            }
+
+            // Initiate DOM search
+            if (this.seeked) {
+                this._seek();
+            }
+
             return this;
         },
         /**
@@ -865,11 +962,17 @@ var SDM = SDM || (function() {
          * @return {object}
          */
         show : function() {
-            // Show Gui window
-            this.gui.mod(this.gui.root, 'is', 'observing');
+            if (this.mode != 'view') {
+                // Modify mode
+                this.mode = 'view';
 
-            // Set Gui keydown event
-            this.events.sub('keydown', this._binded.live);
+                // Show Gui window
+                this.gui.mod(this.gui.root, 'mode', 'view');
+
+                // Set Gui keyboard event
+                this.events.sub('keyup',   this._binded.live);
+                this.events.sub('keydown', this._binded.live);
+            }
 
             return this;
         },
@@ -887,7 +990,7 @@ var SDM = SDM || (function() {
 
             if (it0 = nodes.length) {
                 while (--it0 > -1) {
-                    this.gui.mod(nodes[it0], '(is|are)', 'opened', true);
+                    this.gui.mod(nodes[it0], '(is|are)', 'opened', false);
                 }
             }
 
@@ -947,12 +1050,23 @@ SDM.Gui = SDM.Gui || (function() {
 
             var
                 al0   = '',
-                find  = null,
+                cols  = null,
                 node  = args.wrapper,
                 attrs = null;
 
             // Link to a parent instance
             this.parent = parent;
+
+            // Save the custom fields names schema
+            if (args.keys) {
+                this.keys = {};
+
+                for (al0 in self.prototype.keys) {
+                    this.keys[al0] = args.keys[al0] ?
+                                     args.keys[al0] :
+                                     self.prototype.keys[al0];
+                }
+            }
 
             // Try to fetch the wrapper DOM node
             if (args.wrapper instanceof HTMLElement) {
@@ -968,25 +1082,18 @@ SDM.Gui = SDM.Gui || (function() {
                 className : 'sdm'
             }, node);
 
+            // DOM fields
             node = this.add('unit', node);
+            node = this.add('seek', node);
+            this.find = this.add('find', node);
+            this.add('exit', node);
+            node = node.parentNode;
             this.add('name', node, args);
             this.add('wait', node, args);
             this.add('hide', node, args);
+            cols = this.add('cols', node, args.cols_num);
             this.add('hint', node, args);
-
-            // Save the custom fields names schema
-            if (args.keys) {
-                this.keys = {};
-
-                for (al0 in self.prototype.keys) {
-                    this.keys[al0] = args.keys[al0] ?
-                                     args.keys[al0] :
-                                     self.prototype.keys[al0];
-                }
-            }
-
-            // Add the columns wrapper
-            this.add('cols', this.root.firstChild, args.cols_num);
+            this.add('rows', this.add('col', cols, 0), '|');
         }
 
     /**
@@ -1008,7 +1115,7 @@ SDM.Gui = SDM.Gui || (function() {
      * @param {undefined|object} before
      */
     self.create = function(args, save, before) {
-        args = typeof args == 'object' ? args : {};
+        args = typeof args == 'object' && args !== null ? args : {};
 
         var
             it0  = 0,
@@ -1057,7 +1164,7 @@ SDM.Gui = SDM.Gui || (function() {
     }
 
     /**
-     * @property look
+     * @property keys
      * @property root
      * @property parent
      * @function add
@@ -1069,13 +1176,19 @@ SDM.Gui = SDM.Gui || (function() {
      */
     self.prototype = {
         /**
+         * Search text DOM node
+         *
+         * @type {object}
+         */
+        find : null,
+        /**
          * Data fields custom names
          *
          * @type {object}
          */
         keys : {id : 'id', data : 'data', dead : 'dead', name : 'name', seek : 'seek'},
         /**
-         * Root DOM element
+         * Root DOM node
          *
          * @type {object}
          */
@@ -1096,7 +1209,7 @@ SDM.Gui = SDM.Gui || (function() {
          * @return {object}
          */
         add : function(what, where, args) {
-            args = args || {};
+            args = args !== undefined ? args : {};
 
             var
                 temp = null;
@@ -1115,6 +1228,13 @@ SDM.Gui = SDM.Gui || (function() {
                         id        : 'sdm_' + this.parent.id + '_col_' + args,
                         className : 'sdm__col'
                     }, where);
+                break;
+                // Insert raw DOM node
+                case 'raw':
+                    if (args instanceof HTMLElement) {
+                        where.appendChild(args);
+                        return args;
+                    }
                 break;
                 // Create a row DOM node
                 case 'row':
@@ -1144,23 +1264,28 @@ SDM.Gui = SDM.Gui || (function() {
                     }, where);
                 break;
                 // Create GUI parts and controls
+                case 'exit':
+                case 'find':
                 case 'hide':
                 case 'hint':
                 case 'name':
+                case 'seek':
                 case 'unit':
                 case 'wait':
                     temp = {className : 'sdm__' + what};
 
-                    if (typeof args[what + '_txt'] == 'string') {
+                    if (what == 'find') {
+                        temp.tagName      = 'input';
+                        temp.placeholder  = typeof args[what + '_txt'] == 'string' ?
+                                            args[what + '_txt'] :
+                                            'Search';
+                        temp.autocomplete = "off";
+                    } else if (typeof args[what + '_txt'] == 'string') {
                         temp.title = args[what + '_txt'];
                     } else if (what == 'hint') {
                         temp.title = 'Single click — expand; double click — select; ' +
                                      'Ctrl + double click — multi select or Cmd + double click; ' +
                                      'Esc — close'
-                    }
-
-                    if (what == 'find') {
-                        temp.contenteditable = true;
                     }
 
                     return self.create(temp, where);
@@ -1197,17 +1322,18 @@ SDM.Gui = SDM.Gui || (function() {
                     return this.root.querySelector('.sdm__cols');
                 break;
                 // Get the very first row
-                case 'col:first':
                 case 'row:first':
                     return this.root.querySelector(
+                        '.sdm__col:first-child ' +
+                        '.sdm__rows:last-child ' +
                         '.sdm__' + what + '-child'
                     );
                 break;
                 // Get the rows matched to the search criteria
                 case 'row:match':
                     return this.root.querySelectorAll(
-                        '.sdm__row[data-seek^="' + what + '"],' +
-                        '.sdm__row[data-seek*="' + what + '"]'
+                        '.sdm__row[data-seek^="' + args + '"],' +
+                        '.sdm__row[data-seek*="' + args + '"]'
                     );
                 break;
                 // Get all selected rows
@@ -1236,17 +1362,17 @@ SDM.Gui = SDM.Gui || (function() {
          * @param {string}            is
          * @param {undefined|boolean} rm
          */
-        mod : function(node, as, is, rm) {
+        mod : function(node, alias, value, clear) {
             node.className = node.className.replace(
                 new RegExp((
-                    rm === true ?
-                    '\\s*sdm(__\\S+)?_' + as + '_' + is :
+                    value === false || clear === false ?
+                    '\\s*sdm(__\\S+)?_' + alias + '(_' + (value ? value : '\\S+') + ')?' :
                     '^sdm(__\\S*)?'
-                )),
+                ), value === false ? 'g' : ''),
                 (
-                    rm === true ?
+                    value === false || clear === false ?
                     '' :
-                    'sdm$1 sdm$1_' + as + (is ? '_' + is : '')
+                    'sdm$1 sdm$1_' + alias + (value ? '_' + value : '')
                 )
             );
         },
@@ -1297,7 +1423,7 @@ SDM.Gui = SDM.Gui || (function() {
 
             // Create a new column if not exist
             if (!col) {
-                col = this.add('col', cols, deep)
+                col = this.add('col', cols, deep);
             }
 
             // Create a new rows group if not exist
@@ -1311,7 +1437,7 @@ SDM.Gui = SDM.Gui || (function() {
                 case 'object':
                     // Set the row subitems type
                     if (parent) {
-                        this.mod(parent, 'data', 'loading', true);
+                        this.mod(parent, 'data', 'loading', false);
                         this.mod(parent, 'data', 'rows');
                     }
 
@@ -1348,7 +1474,7 @@ SDM.Gui = SDM.Gui || (function() {
                 case 'string':
                     // Set the row subitems type and save preview HTML
                     if (parent) {
-                        this.mod(parent, 'data', 'loading', true);
+                        this.mod(parent, 'data', 'loading', false);
                         this.mod(parent, 'data', 'html');
                     }
 
@@ -1397,13 +1523,13 @@ SDM.Events = SDM.Events || (function() {
             var
                 it0     = 0,
                 event   = '',
-                auto    = this.auto.match(/([^:;\d]+)/g),
+                auto    = this.auto.split(';'),
                 handler = null;
 
-
             // Setup main properties
-            this._saved = {};
-            this.parent = parent;
+            this._events = {};
+            this._timers = {};
+            this.parent  = parent;
 
             // Save autoevents handlers if exist
             if (it0 = auto.length) {
@@ -1473,6 +1599,25 @@ SDM.Events = SDM.Events || (function() {
     }
 
     /**
+     * Short alias for clearTimeout()
+     *
+     * @param {number} timer
+     */
+    self.halt = function(timer) {
+        self.parent.parent.clearTimeout(timer);
+    }
+
+    /**
+     * Short alias for setTimeout()
+     *
+     * @param {function} handler
+     * @param {number}   delay
+     */
+    self.wait = function(handler, delay) {
+        return self.parent.parent.setTimeout(handler, delay);
+    }
+
+    /**
      * @property auto
      * @property _saved
      * @property parent
@@ -1491,12 +1636,13 @@ SDM.Events = SDM.Events || (function() {
          *
          * @type {string}
          */
-        auto : 'drawstart;drawfinish;' +
-               'dropfail;dropstart:5;dropfinish;' +
-               'holdfail;holdstart:5;holdfinish;' +
-               'loadfail;loadstart:5;loadfinish;' +
-               'openfail;openstart:5;openfinish;' +
-               'seelfail;seekstart:5;seekfinish;' +
+        auto : 'fail;' +
+               'drawstart;drawfinish;' +
+               'dropstart;dropfinish;' +
+               'holdstart;holdfinish;' +
+               'loadstart;loadfinish;' +
+               'openstart;openfinish;' +
+               'seekstart;seekfinish;' +
                'losestart;losefinish;' +
                'shutstart;shutfinish;' +
                'keyup;keydown;mousedown',
@@ -1507,7 +1653,15 @@ SDM.Events = SDM.Events || (function() {
          *
          * @type {object}
          */
-        _saved : null,
+        _events : null,
+        /**
+         * Saved timers ids stack
+         *
+         * @private
+         *
+         * @type {object}
+         */
+        _timers : null,
         /**
          * Link to the parent module instance
          *
@@ -1521,19 +1675,21 @@ SDM.Events = SDM.Events || (function() {
          */
         off : function(event) {
             var
+                node  = null,
                 saved = this._saved[event];
 
-            if (this._saved[event]) {
-                this.halt(event);
+            if (this._events[event]) {
+                // Choose the target node for the event
+                if (event == 'keydown') {
+                    node = self.parent.document.body
+                } else if (event == 'keyup') {
+                    node = this.parent.gui.find;
+                } else {
+                    node = this.parent.gui.root;
+                }
 
-                self.off(
-                    (
-                        event.indexOf('keydown') == 0 ?
-                        self.parent.document.body :
-                        this.parent.gui.root
-                    ),
-                    this._saved[event].handler
-                );
+                // 
+                self.off(node, event, this._events[event]);
             }
         },
         /**
@@ -1543,73 +1699,74 @@ SDM.Events = SDM.Events || (function() {
          * @param {object} data
          */
         pub : function(event, data) {
-            if (this._saved[event]) {
-                self.pub(
-                    (
-                        event.indexOf('keydown') == 0 ?
-                        self.parent.document.body :
-                        this.parent.gui.root
-                    ),
-                    event,
-                    data
-                );
+            var
+                node = null;
+
+            if (this._events[event]) {
+                // Choose the target node for the event
+                if (event == 'keydown') {
+                    node = self.parent.document.body
+                } else if (event == 'keyup') {
+                    node = this.parent.gui.find;
+                } else {
+                    node = this.parent.gui.root;
+                }
+
+                // Fire!
+                self.pub(node, event, data);
+            } else if (data.done) {
+                data.done(data.id);
             }
         },
         /**
          * Subscribe to an event
          *
-         * @param {string}           event
-         * @param {function}         handler
-         * @param {undefined|number} delay
+         * @param {string}   event
+         * @param {function} handler
          */
-        sub : function(event, handler, delay) {
+        sub : function(event, handler) {
             var
-                alias  = '',
-                source = this.auto.match(new RegExp('(' + event + ')(:(\\d+))*(;|$)'));
+                node  = null;
 
-            // Main events should be added once only
-            if (
-                source &&
-                (alias = source[1]) &&
-                !this._saved[alias] &&
-                typeof handler == 'function'
-            ) {
-                delay = typeof delay == 'number' && delay >= 0 ?
-                        delay :
-                        source[3] - 0;
-
-                // Save event handler and time limit
-                this._saved[alias] = {
-                    delay   : !self.parent.parent.isNaN(delay) ? delay : -1,
-                    handler : handler
+            if (this.auto.match(new RegExp('(^|;)' + event))) {
+                // Unscribe old event handler
+                if (this._events[event]) {
+                    this.off(event);
                 }
 
+                // Choose the target node for the event
+                if (event == 'keydown') {
+                    node = self.parent.document.body
+                } else if (event == 'keyup') {
+                    node = this.parent.gui.find;
+                } else {
+                    node = this.parent.gui.root;
+                }
+
+                // Save link to the handler
+                this._events[event] = handler;
+
                 // Save the real event
-                self.sub(
-                    (
-                        alias.indexOf('key') == 0 ?
-                        self.parent.document.body :
-                        this.parent.gui.root
-                    ),
-                    alias,
-                    handler
-                );
+                self.sub(node, event, handler);
             }
         },
         /**
          * Stop an event timer
          *
-         * @param {string} event
+         * @param {string} timer
+         *
+         * @return {boolean}
          */
-        halt : function(event) {
-            var
-                saved = this._saved[event];
+        halt : function(timer) {
+            if (this._timers[timer]) {
+                self.halt(timer);
 
-            if (this._saved[event] && this._saved[event].timer) {
-                this._saved[event].timer = self.parent.parent.clearTimeout(
-                    this._saved[event].timer
-                );
+                delete this._timers[timer];
+
+                return true;
             }
+
+            return false;
         },
         /**
          * Remove an instance
@@ -1619,27 +1776,16 @@ SDM.Events = SDM.Events || (function() {
         /**
          * Fire an event with timer
          *
-         * @param {string} event
-         * @param {object} data
+         * @param {string} timer
+         * @param {object} handler
+         * @param {number} delay
          */
-        wait : function(event, data) {
-            data = data && typeof data == 'object' ? data : {};
-
-            var
-                item = this._saved[event];
-
-            if (item && item.delay && data.fail) {
-                this.halt(event);
-
-                item.timer = self.parent.parent.setTimeout(
-                    data.fail,
-                    item.delay * 1000
-                );
-
-                this.pub(event, data);
-            } else if (data.done) {
-                data.done();
+        wait : function(timer, handler, delay) {
+            if (this._timers[timer]) {
+                this.halt(timer);
             }
+
+            return (this._timers[timer] = self.wait(handler, delay));
         }
     };
 
