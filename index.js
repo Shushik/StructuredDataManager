@@ -1366,7 +1366,7 @@ SDM.Gui = SDM.Gui || (function() {
             node.className = node.className.replace(
                 new RegExp((
                     value === false || clear === false ?
-                    '\\s*sdm(__\\S+)?_' + alias + '(_' + (value ? value : '\\S+') + ')?' :
+                    '\\s*sdm(__\\S+)?_' + alias + '(_' + (value ? value : '\\S+') + ')+' :
                     '^sdm(__\\S*)?'
                 ), value === false ? 'g' : ''),
                 (
