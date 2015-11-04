@@ -763,7 +763,6 @@ var SDM = SDM || (function() {
          */
         open : function(id) {
             var
-                to  = null,
                 row = null;
 
             // Set the current row id
@@ -771,11 +770,6 @@ var SDM = SDM || (function() {
                 this.opened = id;
             } else if (id instanceof HTMLElement) {
                 row = id;
-                this.opened = id = this.gui.get('id', row);
-            } else if (
-                !this.opened &&
-                (row = this.gui.get('row:first', true))
-            ) {
                 this.opened = id = this.gui.get('id', row);
             }
 
