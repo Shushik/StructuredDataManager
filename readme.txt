@@ -187,7 +187,13 @@
 
      method           | value
     ==========================================================================
-     back()           | Move cursor to the previous row.
+     bwd()            | Move cursor to the previous row.
+    --------------------------------------------------------------------------
+     dwd()            | Move cursor from the parent row to the related items.
+    --------------------------------------------------------------------------
+     fwd()            | Move cursor to the next row.
+    --------------------------------------------------------------------------
+     uwd()            | Move cursor from the related items to the parent row.
     --------------------------------------------------------------------------
      drop(id)         | Deselect the selected row (with mouse doubleclick or
                       | enter keypress).
@@ -207,11 +213,11 @@
                       |         previously selected rows and the hold_cls key
                       |         in the args was set on true.
     --------------------------------------------------------------------------
+     init()           | Set the main module variables.
+    --------------------------------------------------------------------------
      kill()           | Destroy an instance.
     --------------------------------------------------------------------------
      lose()           | Clean search results.
-    --------------------------------------------------------------------------
-     next()           | Move cursor to the next row.
     --------------------------------------------------------------------------
      open(id)         | Set a cursor to the row and show all the subitems
                       | related to it.
@@ -232,8 +238,6 @@
                       | — id   — id of the parent row («-» if root);
                       | — data — array with the row.
     --------------------------------------------------------------------------
-     quit()           | Move cursor from the related items to the parent row.
-    --------------------------------------------------------------------------
      seek(what)       | Search a text through the rows.
                       |
                       | Takes the following arguments:
@@ -243,8 +247,6 @@
     --------------------------------------------------------------------------
      shut()           | Remove a cursor from the row and hide all the
                       | subitems related to it.
-    --------------------------------------------------------------------------
-     step()           | Move cursor from the parent row to the related items.
     ==========================================================================
 
 
