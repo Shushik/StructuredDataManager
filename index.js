@@ -242,7 +242,7 @@ var SDM = SDM || (function() {
             // Clean previous results
             root.innerHTML = '';
 
-            // 
+            // Clone row nodes and put them into fake rows group
             if (
                 (rows = this.gui.get('row:match', this.seeked.toLowerCase())) &&
                 (ln0 = rows.length)
@@ -276,9 +276,6 @@ var SDM = SDM || (function() {
             var
                 id = '';
 
-            // Cancel the search action
-            this.events.halt('keyup');
-
             switch (event.code) {
                 // 
                 case 13:
@@ -302,6 +299,9 @@ var SDM = SDM || (function() {
                 break;
                 // Text typing
                 default:
+                    // Cancel the search action
+                    this.events.halt('keyup');
+
                     if (this.seeked != event.node.value) {
                         this.opened = '';
                         this.seeked = event.node.value;
