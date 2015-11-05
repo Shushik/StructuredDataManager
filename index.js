@@ -218,7 +218,7 @@ var SDM = SDM || (function() {
                 ln0  = 0,
                 row  = null,
                 fake = null,
-                root = this.gui.get('rows', '-'),
+                real = this.gui.get('rows', '-'),
                 rows = null;
 
             // Initiate the search mode
@@ -232,15 +232,20 @@ var SDM = SDM || (function() {
                 this.gui.mod(this.gui.root, 'mode', 'view', false);
                 this.gui.mod(this.gui.root, 'mode', 'seek');
 
-                // 
+                // Get the new root rows group
                 fake = this.gui.get('rows', '|');
-                root.id = root.id.replace('_-', '_|');
-                fake.id = fake.id.replace('_|', '_-');
-                root = fake;
+
+                // Replace
+                this.gui.mod(real, 'id', false);
+                this.gui.mod(real, 'id', '|');
+                this.gui.mod(fake, 'id', false);
+                this.gui.mod(fake, 'id', '-');
+
+                real = fake;
             }
 
             // Clean previous results
-            root.innerHTML = '';
+            real.innerHTML = '';
 
             // Clone row nodes and put them into fake rows group
             if (
@@ -249,7 +254,7 @@ var SDM = SDM || (function() {
             ) {
                 while (++it0 < ln0) {
                     row = rows[it0].cloneNode();
-                    this.gui.add('raw', root, row);
+                    this.gui.add('raw', real, row);
                 }
             }
 
@@ -725,7 +730,7 @@ var SDM = SDM || (function() {
         lose : function() {
             var
                 fake = this.gui.get('rows', '-'),
-                root = this.gui.get('rows', '|');
+                real = this.gui.get('rows', '|');
 
             // Initiate the search mode
             if (this.mode == 'seek') {
@@ -745,8 +750,10 @@ var SDM = SDM || (function() {
                 this.gui.mod(this.gui.root, 'mode', 'view');
 
                 // Replace 
-                root.id = root.id.replace('_|', '_-');
-                fake.id = fake.id.replace('_-', '_|');
+                this.gui.mod(fake, 'id', false);
+                this.gui.mod(fake, 'id', '|');
+                this.gui.mod(real, 'id', false);
+                this.gui.mod(real, 'id', '-');
 
                 // Clean results
                 fake.innerHTML = '';
@@ -1186,8 +1193,7 @@ SDM.Gui = SDM.Gui || (function() {
                 // Create a column DOM node
                 case 'col':
                     return self.create({
-                        id        : 'sdm_' + this.parent.id + '_col_' + args,
-                        className : 'sdm__col'
+                        className : 'sdm__col sdm__col_id_' + args
                     }, where);
                 break;
                 // Insert raw DOM node
@@ -1200,9 +1206,9 @@ SDM.Gui = SDM.Gui || (function() {
                 // Create a row DOM node
                 case 'row':
                     return self.create({
-                        id        : 'sdm_' + this.parent.id + '_row_' + args.id,
                         title     : args.name,
-                        className : 'sdm__row' + (args.dead ? ' sdm__row_data_dead' : ''),
+                        className : 'sdm__row sdm__row_id_' + args.id +
+                                    (args.dead ? ' sdm__row_data_dead' : ''),
                         data      : {
                                         seek : args.seek ?
                                                args.seek + '' :
@@ -1220,8 +1226,7 @@ SDM.Gui = SDM.Gui || (function() {
                 // Create a rows group DOM node
                 case 'rows':
                     return self.create({
-                        id        : 'sdm_' + this.parent.id + '_rows_' + args,
-                        className : 'sdm__rows'
+                        className : 'sdm__rows sdm__rows_id_' + args
                     }, where);
                 break;
                 // Create GUI parts and controls
@@ -1272,16 +1277,25 @@ SDM.Gui = SDM.Gui || (function() {
             switch (what) {
                 // Get a clean id of the row or rows group
                 case 'id':
-                    return (args instanceof HTMLElement ? args.id : args).
-                           replace(/sdm_[^_]*_[^_]*_/, '');
+                    if (args instanceof HTMLElement) {
+                        console.log(args.className.replace(
+                            /[\s\S]*sdm__(col|row|rows)_id_(\S*)[\s\S]*/,
+                            '$2'
+                        ));
+                        return args.className.replace(
+                            /[\s\S]*sdm__(col|row|rows)_id_(\S*)[\s\S]*/,
+                            '$2'
+                        );
+                    }
                 break;
                 // Get the column, rows group or row node
                 case 'col':
                 case 'row':
                 case 'rows':
-                    last = self.parent.document.getElementById(
-                        'sdm_' + this.parent.id + '_' + what + '_' + args
-                    );
+                    last = this.root.getElementsByClassName(
+                               'sdm__' + what + '_id_' + args
+                           );
+                    last = last && last.length ? last[0] : null;
                 break;
                 // Get the columns wrapper node
                 case 'cols':
