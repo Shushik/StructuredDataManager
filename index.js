@@ -1,21 +1,21 @@
 /**
  * Tree structured data manager (ex b-finder)
  *
- * @page    https://github.com/Shushik/StructuredDataManager
- * @author  Shushik <silkleopard@yandex.ru>
- * @version 2.0
+ * @page     https://github.com/Shushik/StructuredDataManager
+ * @since    11.2015
+ * @author   Shushik <silkleopard@yandex.ru>
+ * @license  GNU LGPL
+ * @version  2.0
+ * @tutorial readme.txt
  *
- * @namespace SDM
+ * @class SDM
  */
 var SDM = SDM || (function() {
 
     /**
-     * @constructor
+     * Static members and methods
      *
-     * @property parent
-     * @property document
-     * @function Gui
-     * @function Events
+     * @constructor
      *
      * @param {object} args
      */
@@ -55,7 +55,9 @@ var SDM = SDM || (function() {
     /**
      * Number of module version
      *
-     * @type {string}
+     * @static
+     *
+     * @member {string} version
      */
     self.version = '2.0';
 
@@ -64,7 +66,7 @@ var SDM = SDM || (function() {
      *
      * @static
      *
-     * @type {object}
+     * @member {object} parent
      */
     self.parent = this;
 
@@ -73,78 +75,42 @@ var SDM = SDM || (function() {
      *
      * @static
      *
-     * @type {object}
+     * @member {object} document
      */
     self.document = this.document;
 
     /**
-     * @instance
-     *
-     * @property _binded
-     * @property id
-     * @property gui
-     * @property mode
-     * @property events
-     * @property holded
-     * @property opened
-     * @property seeked
-     * @function _live
-     * @function _click
-     * @function _keyup
-     * @function _failed
-     * @function _opened
-     * @function _droped
-     * @function _holded
-     * @function _loaded
-     * @function _keydown
-     * @function _dblclick
-     * @function _mousedown
-     * @function bwd
-     * @function dwd
-     * @function fwd
-     * @function uwd
-     * @function drop
-     * @function hide
-     * @function hold
-     * @function init
-     * @function kill
-     * @function lose
-     * @function open
-     * @function pull
-     * @function push
-     * @function seek
-     * @function show
-     * @function shut
+     * Instance members and methods
      */
     self.prototype = {
         /**
          * Instance id
          *
-         * @type {number}
+         * @member {number} id
          */
         id : 0,
         /**
          * Module mode
          *
-         * @type {string}
+         * @member {string} mode
          */
         mode : 'view',
         /**
          * Selected rows ids
          *
-         * @type {string}
+         * @member {string} holded
          */
         holded : '',
         /**
          * Id of the row on which the cursor has been set
          *
-         * @type {string}
+         * @member {string} opened
          */
         opened : '',
         /**
          * Search text
          *
-         * @type {string}
+         * @member {string} seeked
          */
         seeked : '',
         /**
@@ -152,19 +118,21 @@ var SDM = SDM || (function() {
          *
          * @private
          *
-         * @type {object}
+         * @member {object} _binded
          */
         _binded : null,
         /**
          * Gui operations module instance
          *
-         * @type {object}
+         * @see    SDM.Gui
+         * @member {object} gui
          */
         gui : null,
         /**
          * Events operations module instance
          *
-         * @type {object}
+         * @see    SDM.Events
+         * @member {object} events
          */
         events : null,
         /**
@@ -172,8 +140,9 @@ var SDM = SDM || (function() {
          *
          * @private
          *
-         * @param {object} event
-         *
+         * @method  _live
+         * @param   {object} event
+         * @listens {keyup|keydown|mousedown}
          * @returns {object}
          */
         _live : function(event) {
@@ -211,6 +180,8 @@ var SDM = SDM || (function() {
          * Initiate DOM search
          *
          * @private
+         *
+         * @method _seek
          */
         _seek : function() {
             var
@@ -265,6 +236,8 @@ var SDM = SDM || (function() {
          * Click pseudoevent handler
          *
          * @private
+         *
+         * @method _click
          */
         _click : function() {
             this.open();
@@ -275,7 +248,8 @@ var SDM = SDM || (function() {
          *
          * @private
          *
-         * @param {object} event
+         * @method _keyup
+         * @param  {object} event
          */
         _keyup : function(event) {
             var
@@ -327,47 +301,21 @@ var SDM = SDM || (function() {
          *
          * @private
          *
-         * @param {string}           id
-         * @param {undefined|object} data
+         * @method _droped
+         * @param  {string}           id
+         * @param  {undefined|object} data
          */
         _droped : function(id) {
             this.push(id, null, 'drop');
-        },
-        /**
-         * Common error handler
-         *
-         * @private
-         *
-         * @param {undefined|string} text
-         */
-        _failed : function(id, text) {
-            // Turn the progress bar off
-            this.gui.mod(this.gui.root, 'is', 'waiting', false);
-
-            // Tell subscribers the action has been finished
-            this.events.pub('fail', {
-                id   : id,
-                hide : this._binded.hide,
-                show : this._binded.show
-            });
-
-            // Remove loading class
-            if (typeof id == 'string' && (row = this.gui.get('row', id, true))) {
-                this.gui.mod(row, 'data', 'loading', false);
-                this.gui.mod(row, 'data', 'dead');
-
-                if (row.className.indexOf('_is_holded')) {
-                    this.drop(id);
-                }
-            }
         },
         /**
          * Finish the holding process
          *
          * @private
          *
-         * @param {string}           id
-         * @param {undefined|object} data
+         * @method _holded
+         * @param  {string}           id
+         * @param  {undefined|object} data
          */
         _holded : function(id, data) {
             this.push(id, data, 'hold');
@@ -377,8 +325,9 @@ var SDM = SDM || (function() {
          *
          * @private
          *
-         * @param {string}           id
-         * @param {undefined|object} data
+         * @method _loaded
+         * @param  {string}           id
+         * @param  {undefined|object} data
          */
         _loaded : function(id, data) {
             this.push(id, data, 'load');
@@ -388,8 +337,9 @@ var SDM = SDM || (function() {
          *
          * @private
          *
-         * @param {string}           id
-         * @param {undefined|object} data
+         * @method _opened
+         * @param  {string}           id
+         * @param  {undefined|object} data
          */
         _opened : function(id, data) {
             var
@@ -411,7 +361,8 @@ var SDM = SDM || (function() {
          *
          * @private
          *
-         * @param {object} event
+         * @method _keydown
+         * @param  {object} event
          */
         _keydown : function(event) {
             // No need to go further
@@ -473,7 +424,8 @@ var SDM = SDM || (function() {
          *
          * @private
          *
-         * @param {boolean} ctrl
+         * @method _dblclick
+         * @param  {boolean} ctrl
          */
         _dblclick : function(ctrl) {
             if (this.mode == 'seek') {
@@ -490,7 +442,8 @@ var SDM = SDM || (function() {
          *
          * @private
          *
-         * @param {object} event
+         * @method _mousedown
+         * @param  {object} event
          */
         _mousedown : function(event) {
             var
@@ -537,6 +490,7 @@ var SDM = SDM || (function() {
         /**
          * Set cursor at the upper row
          *
+         * @method  bwd
          * @returns {object}
          */
         bwd : function() {
@@ -546,6 +500,7 @@ var SDM = SDM || (function() {
         /**
          * Set cursor at the first child row
          *
+         * @method  dwd
          * @returns {object}
          */
         dwd : function() {
@@ -555,6 +510,7 @@ var SDM = SDM || (function() {
         /**
          * Set cursor at the downer row
          *
+         * @method  fwd
          * @returns {object}
          */
         fwd : function() {
@@ -563,6 +519,9 @@ var SDM = SDM || (function() {
         },
         /**
          * Set cursor at the parent row
+         *
+         * @method  uwd
+         * @returns {object}
          */
         uwd : function() {
             this.open(this.gui.get('row:parent', this.opened, true));
@@ -571,8 +530,8 @@ var SDM = SDM || (function() {
         /**
          * Deselect a row
          *
-         * @param {undefined|string|object} id
-         *
+         * @method  drop
+         * @param   {undefined|string|object} id
          * @returns {object}
          */
         drop : function(id) {
@@ -608,8 +567,47 @@ var SDM = SDM || (function() {
             return this;
         },
         /**
+         * Common error handler
+         *
+         * @method  fail
+         * @param   {undefined|string} text
+         * @fires   SDM#fail
+         * @returns {object}
+         */
+        fail : function(id, text) {
+            // Turn the progress bar off
+            this.gui.mod(this.gui.root, 'is', 'waiting', false);
+
+            /**
+             * Tell subscribers action has been failed
+             *
+             * @event    SDM#fail
+             * @property {string}   id
+             * @property {function} hide
+             * @property {function} show
+             */
+            this.events.pub('fail', {
+                id   : id,
+                hide : this._binded.hide,
+                show : this._binded.show
+            });
+
+            // Remove loading class
+            if (typeof id == 'string' && (row = this.gui.get('row', id, true))) {
+                this.gui.mod(row, 'data', 'loading', false);
+                this.gui.mod(row, 'data', 'dead');
+
+                if (row.className.indexOf('_is_holded')) {
+                    this.drop(id);
+                }
+            }
+
+            return this;
+        },
+        /**
          * Hide module
          *
+         * @method  hide
          * @returns {object}
          */
         hide : function() {
@@ -631,9 +629,9 @@ var SDM = SDM || (function() {
         /**
          * Select a row
          *
-         * @param {string}  id
-         * @param {boolean} add
-         *
+         * @method  hold
+         * @param   {string}  id
+         * @param   {boolean} add
          * @returns {object}
          */
         hold : function(id, add) {
@@ -671,8 +669,8 @@ var SDM = SDM || (function() {
         /**
          * Init the module
          *
-         * @param {object} args
-         *
+         * @method  init
+         * @param   {object} args
          * @returns {object}
          */
         init : function(args) {
@@ -690,7 +688,7 @@ var SDM = SDM || (function() {
                 show   : this.show.bind(this),
                 click  : this._click.bind(this),
                 droped : this._droped.bind(this),
-                failed : this._failed.bind(this),
+                failed : this.fail.bind(this),
                 holded : this._holded.bind(this),
                 loaded : this._loaded.bind(this),
                 opened : this._opened.bind(this)
@@ -700,6 +698,8 @@ var SDM = SDM || (function() {
         },
         /**
          * Destroy an instance
+         *
+         * @method kill
          */
         kill : function() {
             var
@@ -725,6 +725,7 @@ var SDM = SDM || (function() {
         /**
          * Clear the search results
          *
+         * @method  lose
          * @returns {object}
          */
         lose : function() {
@@ -764,8 +765,8 @@ var SDM = SDM || (function() {
         /**
          * Set a cursor to the row
          *
-         * @param {undefined|string|object} id
-         *
+         * @method  open
+         * @param   {undefined|string|object} id
          * @returns {object}
          */
         open : function(id) {
@@ -826,15 +827,16 @@ var SDM = SDM || (function() {
         /**
          * Pull external data
          *
-         * @param {string} id
-         * @param {string} action
-         *
+         * @method  pull
+         * @param   {string} id
+         * @param   {string} action
+         * @fires   SDM#loadstart:dropstart:holdstart:openstart
          * @returns {object}
          */
         pull : function(id, action) {
             action = typeof action == 'string' ? action : 'load';
 
-            // 
+            // No need to go further
             if (typeof id != 'string' && id != '-') {
                 return this;
             }
@@ -842,7 +844,16 @@ var SDM = SDM || (function() {
             // Turn the progress bar on
             this.gui.mod(this.gui.root, 'is', 'waiting');
 
-            // Set the timer for the start event
+            /**
+             * Tell subscribers action has been started
+             *
+             * @event    SDM#loadstart:dropstart:holdstart:openstart
+             * @property {string}   id
+             * @property {function} done
+             * @property {function} fail
+             * @property {function} hide
+             * @property {function} show
+             */
             this.events.pub(action + 'start', {
                 id   : id,
                 done : this._binded[action + 'ed'],
@@ -856,10 +867,11 @@ var SDM = SDM || (function() {
         /**
          * Add the rows
          *
-         * @param {string}           id
-         * @param {object}           data
-         * @param {undefined|string} action
-         *
+         * @method  push
+         * @param   {string}           id
+         * @param   {object}           data
+         * @param   {undefined|string} action
+         * @fires   SDM#drawstart:drawfinish:loadfinish:dropfinish:holdfinish:openfinish
          * @returns {object}
          */
         push : function(id, data, action) {
@@ -872,6 +884,14 @@ var SDM = SDM || (function() {
             if (typeof action == 'string') {
                 this.gui.mod(this.gui.root, 'is', 'waiting', false);
 
+                /**
+                 * Tell subscribers action has been finished
+                 *
+                 * @event    SDM#loadfinish:dropfinish:holdfinish:openfinish
+                 * @property {string}   id
+                 * @property {function} hide
+                 * @property {function} show
+                 */
                 this.events.pub((action + 'finish'), {
                     id   : id,
                     hide : this._binded.hide,
@@ -884,7 +904,14 @@ var SDM = SDM || (function() {
                 // Get a row
                 row = this.gui.get('row', id, true);
 
-                // Tell subscribers the rendering has been started
+                /**
+                 * Tell subscribers rendering action has been started
+                 *
+                 * @event    SDM#drawstart
+                 * @property {string}   id
+                 * @property {function} hide
+                 * @property {function} show
+                 */
                 this.events.pub('drawstart', {
                     id   : id,
                     hide : this._binded.hide,
@@ -901,7 +928,14 @@ var SDM = SDM || (function() {
                 // Create cols and rows
                 this.gui.push(data, id, deep);
 
-                // Tell subscribers the rendering has been finished
+                /**
+                 * Tell subscribers rendering action has been finished
+                 *
+                 * @event    SDM#drawfinish
+                 * @property {string}   id
+                 * @property {function} hide
+                 * @property {function} show
+                 */
                 this.events.pub('drawfinish', {
                     id   : id,
                     hide : this._binded.hide,
@@ -914,8 +948,8 @@ var SDM = SDM || (function() {
         /**
          * Find a word in the rows
          *
-         * @param {string} what
-         *
+         * @method  seek
+         * @param   {string} what
          * @returns {object}
          */
         seek : function(what) {
@@ -942,6 +976,7 @@ var SDM = SDM || (function() {
         /**
          * Show module
          *
+         * @method  show
          * @returns {object}
          */
         show : function() {
@@ -963,6 +998,7 @@ var SDM = SDM || (function() {
          * Remove cursors from all rows in chain and hide
          * all rows groups and columns
          *
+         * @method  shut
          * @returns {object}
          */
         shut : function() {
@@ -988,17 +1024,16 @@ var SDM = SDM || (function() {
 
 
 /**
- * Gui operations
+ * Gui operations module
  *
- * @namespace SDM.Gui
+ * @class SDM.Gui
  */
 SDM.Gui = SDM.Gui || (function() {
 
     /**
-     * @constructor
+     * Static members and methods
      *
-     * @property parent
-     * @function create
+     * @constructor
      *
      * @param {object} args
      * @param {object} parent
@@ -1063,7 +1098,7 @@ SDM.Gui = SDM.Gui || (function() {
      *
      * @static
      *
-     * @type {object}
+     * @member {object} parent
      */
     self.parent = this;
 
@@ -1072,9 +1107,10 @@ SDM.Gui = SDM.Gui || (function() {
      *
      * @static
      *
-     * @param {object}           args
-     * @param {undefined|object} save
-     * @param {undefined|object} before
+     * @method create
+     * @param  {object}           args
+     * @param  {undefined|object} save
+     * @param  {undefined|object} before
      */
     self.create = function(args, save, before) {
         args = typeof args == 'object' && args !== null ? args : {};
@@ -1126,54 +1162,46 @@ SDM.Gui = SDM.Gui || (function() {
     }
 
     /**
-     * @property keys
-     * @property root
-     * @property parent
-     * @function add
-     * @function get
-     * @function mod
-     * @function kill
-     * @function move
-     * @function push
+     * Instance members and methods
      */
     self.prototype = {
         /**
          * Search text DOM node
          *
-         * @type {object}
+         * @member {object} find
          */
         find : null,
         /**
          * Data fields custom names
          *
-         * @type {object}
+         * @member {object} keys
          */
         keys : {id : 'id', data : 'data', dead : 'dead', name : 'name', seek : 'seek'},
         /**
          * Last result of this.get(...)
          *
-         * @type {object}
+         * @member {object} last
          */
         last : null,
         /**
          * Root DOM node
          *
-         * @type {object}
+         * @member {object} root
          */
         root : null,
         /**
          * Link to the parent module instance
          *
-         * @type {object}
+         * @member {object} parent
          */
         parent : null,
         /**
          * Create a row, rows group, column or columns wrapper
          *
-         * @param {string}        what
-         * @param {object}        where
-         * @param {string|object} args
-         *
+         * @method  add
+         * @param   {string}        what
+         * @param   {object}        where
+         * @param   {string|object} args
          * @returns {object}
          */
         add : function(what, where, args) {
@@ -1263,10 +1291,10 @@ SDM.Gui = SDM.Gui || (function() {
         /**
          * Get DOM element(s) or dom property
          *
-         * @param {string}                          what
-         * @param {undefined|boolean|string|object} from
-         * @param {undefined|boolean}               save
-         *
+         * @method  get
+         * @param   {string}                          what
+         * @param   {undefined|boolean|string|object} from
+         * @param   {undefined|boolean}               save
          * @returns {string|object}
          */
         get : function(what, args, save) {
@@ -1373,10 +1401,11 @@ SDM.Gui = SDM.Gui || (function() {
         /**
          * Deselect the row
          *
-         * @param {object}            node
-         * @param {string}            as
-         * @param {string}            is
-         * @param {undefined|boolean} rm
+         * @method mod
+         * @param  {object}            node
+         * @param  {string}            alias
+         * @param  {boolean|string}    value
+         * @param  {undefined|boolean} clear
          */
         mod : function(node, alias, value, clear) {
             node.className = node.className.replace(
@@ -1394,6 +1423,8 @@ SDM.Gui = SDM.Gui || (function() {
         },
         /**
          * Remove an instance
+         *
+         * @method kill
          */
         kill : function() {
             delete this.last;
@@ -1404,7 +1435,8 @@ SDM.Gui = SDM.Gui || (function() {
         /**
          * Scroll to the chosen column
          *
-         * @param {undefined|boolean} yoff
+         * @method move
+         * @param  {undefined|boolean} yoff
          */
         move : function(yoff) {
             var
@@ -1423,10 +1455,11 @@ SDM.Gui = SDM.Gui || (function() {
         /**
          * Create cols and rows
          *
-         * @param {object}           data
-         * @param {number}           pid
-         * @param {undefined|number} _deep
-         * @param {undefined|object} _cols
+         * @method push
+         * @param  {object}           data
+         * @param  {number}           pid
+         * @param  {undefined|number} _deep
+         * @param  {undefined|object} _cols
          */
         push : function(data, pid, _deep, _cols) {
             pid  = pid ? pid : '-';
@@ -1519,19 +1552,16 @@ SDM.Gui = SDM.Gui || (function() {
 
 
 /**
- * Events tools
+ * Events operations module
  *
- * @namespace SDM.Events
+ * @class SDM.Events
  */
 SDM.Events = SDM.Events || (function() {
 
     /**
-     * @constructor
+     * Static members and methods
      *
-     * @property parent
-     * @function off
-     * @function pub
-     * @function sub
+     * @constructor
      *
      * @param {object} handlers
      * @param {object} parent
@@ -1569,7 +1599,7 @@ SDM.Events = SDM.Events || (function() {
      *
      * @static
      *
-     * @type {object}
+     * @member {object} parent
      */
     self.parent = this;
 
@@ -1578,9 +1608,10 @@ SDM.Events = SDM.Events || (function() {
      *
      * @static
      *
-     * @param {object}   node
-     * @param {string}   type
-     * @param {function} func
+     * @method off
+     * @param  {object}   node
+     * @param  {string}   type
+     * @param  {function} func
      */
     self.off = function(node, type, func) {
         node.removeEventListener(type, func);
@@ -1591,9 +1622,10 @@ SDM.Events = SDM.Events || (function() {
      *
      * @static
      *
-     * @param {object}   node
-     * @param {string}   type
-     * @param {function} func
+     * @method pub
+     * @param  {object}   node
+     * @param  {string}   type
+     * @param  {function} func
      */
     self.pub = function(node, type, data) {
         data = typeof data == 'object' ? data : {};
@@ -1610,9 +1642,10 @@ SDM.Events = SDM.Events || (function() {
      *
      * @static
      *
-     * @param {object}   node
-     * @param {string}   type
-     * @param {function} func
+     * @method sub
+     * @param  {object}   node
+     * @param  {string}   type
+     * @param  {function} func
      *
      * @returns {object}
      */
@@ -1623,7 +1656,10 @@ SDM.Events = SDM.Events || (function() {
     /**
      * Short alias for clearTimeout()
      *
-     * @param {number} timer
+     * @static
+     *
+     * @method halt
+     * @param  {number} timer
      */
     self.halt = function(timer) {
         self.parent.parent.clearTimeout(timer);
@@ -1632,31 +1668,24 @@ SDM.Events = SDM.Events || (function() {
     /**
      * Short alias for setTimeout()
      *
-     * @param {function} handler
-     * @param {number}   delay
+     * @static
+     *
+     * @method wait
+     * @param  {function} handler
+     * @param  {number}   delay
      */
     self.wait = function(handler, delay) {
         return self.parent.parent.setTimeout(handler, delay);
     }
 
     /**
-     * @instance
-     *
-     * @property auto
-     * @property _saved
-     * @property parent
-     * @function off
-     * @function pub
-     * @function sub
-     * @function halt
-     * @function kill
-     * @function wait
+     * Instance members and methods
      */
     self.prototype = {
         /**
          * Available events list
          *
-         * @type {string}
+         * @member {string} auto
          */
         auto : 'fail;' +
                'drawstart;drawfinish;' +
@@ -1673,19 +1702,20 @@ SDM.Events = SDM.Events || (function() {
          *
          * @private
          *
-         * @type {object}
+         * @member {object} _saved
          */
         _saved : null,
         /**
          * Link to the parent module instance
          *
-         * @type {object}
+         * @member {object} parent
          */
         parent : null,
         /**
          * Remove an event
          *
-         * @param {string} event
+         * @method off
+         * @param  {string} event
          */
         off : function(event) {
             var
@@ -1702,8 +1732,9 @@ SDM.Events = SDM.Events || (function() {
         /**
          * Fire an event
          *
-         * @param {string} event
-         * @param {object} data
+         * @method pub
+         * @param  {string} event
+         * @param  {object} data
          */
         pub : function(event, data) {
             var
@@ -1721,8 +1752,9 @@ SDM.Events = SDM.Events || (function() {
         /**
          * Subscribe to an event
          *
-         * @param {string}   event
-         * @param {function} handler
+         * @method sub
+         * @param  {string}   event
+         * @param  {function} handler
          */
         sub : function(event, handler) {
             var
@@ -1733,25 +1765,21 @@ SDM.Events = SDM.Events || (function() {
                 (node = this.parent.gui.get('event:root', event))
             ) {
                 this.off(event);
-
                 this._saved[event] = handler;
-
                 self.sub(node, event, handler);
             }
         },
         /**
          * Stop an event timer
          *
-         * @param {string} timer
-         *
+         * @method  halt
+         * @param   {string} timer
          * @returns {boolean}
          */
         halt : function(timer) {
             if (typeof this._saved[timer] == 'number') {
                 self.halt(this._saved[timer]);
-
                 delete this._saved[timer];
-
                 return true;
             }
 
@@ -1759,6 +1787,8 @@ SDM.Events = SDM.Events || (function() {
         },
         /**
          * Remove an instance
+         *
+         * @method kill
          */
         kill : function() {
             var
@@ -1786,9 +1816,11 @@ SDM.Events = SDM.Events || (function() {
         /**
          * Fire an event with timer
          *
-         * @param {string} timer
-         * @param {object} handler
-         * @param {number} delay
+         * @method  wait
+         * @param   {string} timer
+         * @param   {object} handler
+         * @param   {number} delay
+         * @returns {number}
          */
         wait : function(timer, handler, delay) {
             this.halt(timer);

@@ -1,3 +1,14 @@
+/**
+ * Tree structured data manager (ex b-finder)
+ *
+ * @page     https://github.com/Shushik/StructuredDataManager
+ * @since    11.2015
+ * @author   Shushik <silkleopard@yandex.ru>
+ * @license  GNU LGPL
+ * @version  2.0
+ * @tutorial readme.txt
+ */
+/** Wrapper (beg) */
 .sdm
 {
     font: normal 12px/14px Verdana, Arial, sans-serif;
@@ -31,9 +42,11 @@
 {
     display: block;
 }
+/** Wrapper (end) */
 
 
 
+/** Window (beg) */
 .sdm__unit
 {
     vertical-align: middle;
@@ -48,10 +61,12 @@
     background:    #F0F0F0;
     border-radius: 10px 10px 2px 2px;
 }
+/** Window (end) */
 
 
 
-@-webkit-keyframes sim_is_waiting { 
+/** Progressbar (beg) */
+@-webkit-keyframes sdm_is_waiting { 
     0%
     {
         background-position: 0 0;
@@ -62,7 +77,7 @@
     }
 }
 
-@-moz-keyframes sim_is_waiting {
+@-moz-keyframes sdm_is_waiting {
     0%
     {
         background-position: 0 0;
@@ -73,7 +88,7 @@
     }
 }
 
-@keyframes sim_is_waiting {
+@keyframes sdm_is_waiting {
     0%
     {
         background-position: 0 0;
@@ -122,9 +137,11 @@
 {
     display: block;
 }
+/** Progressbar (end) */
 
 
 
+/** Title text (beg) */
 .sdm__name
 {
     font-size: 18px;
@@ -154,9 +171,11 @@
 {
     content: attr(title);
 }
+/** Title text (end) */
 
 
 
+/** Hint text (beg) */
 .sdm__hint
 {
     font-size: 10px;
@@ -182,9 +201,11 @@
 {
     content: attr(title);
 }
+/** Hint text (end) */
 
 
 
+/** Hide control (beg) */
 .sdm__hide
 {
     font-size: 22px;
@@ -207,9 +228,11 @@
 {
     content: "×";
 }
+/** Hide control (end) */
 
 
 
+/** Search (beg) */
 .sdm__seek
 {
     position: absolute;
@@ -251,9 +274,11 @@
 {
     display: none;
 }
+/** Search (end) */
 
 
 
+/** Search text field (beg) */
 .sdm__find
 {
     font-size: 11px;
@@ -278,9 +303,11 @@
     -moz-box-shadow:    none;
     box-shadow:         none;
 }
+/** Search text field (end) */
 
 
 
+/** Search clear control (beg) */
 .sdm__exit
 {
     font-size: 14px;
@@ -297,9 +324,11 @@
 {
     content: "×";
 }
+/** Search clear control (end) */
 
 
 
+/** Columns wrapper (beg) */
 .sdm__cols
 {
     white-space: nowrap;
@@ -316,9 +345,11 @@
 
     background: #FFF;
 }
+/** Columns wrapper (end) */
 
 
 
+/** Column (beg) */
 .sdm__col
 {
     vertical-align: top;
@@ -382,9 +413,11 @@
 {
     width: 20%;
 }
+/** Column (end) */
 
 
 
+/** Rows group (beg) */
 .sdm__rows
 {
     display: none;
@@ -396,9 +429,11 @@
 {
     display: block;
 }
+/** Rows group (end) */
 
 
 
+/** Row (beg) */
 .sdm__row
 {
     text-align: left;
@@ -485,9 +520,11 @@
 {
     content: "";
 }
+/** Row (end) */
 
 
 
+/** Preview (beg) */
 .sdm__box
 {
     text-align: left;
@@ -496,3 +533,4 @@
 
     padding: 2px 5px 2px 5px;
 }
+/** Preview (end) */
