@@ -589,7 +589,7 @@ var SDM = SDM || (function() {
      *
      * @method  fail
      * @param   {undefined|string} text
-     * @fires   SDM#fail
+     * @fires   SDM.fail
      * @returns {object}
      */
     self.prototype.fail = function(id, text) {
@@ -599,10 +599,13 @@ var SDM = SDM || (function() {
         /**
          * Tell subscribers action has been failed
          *
-         * @event    SDM#fail
-         * @property {string}   id
-         * @property {function} hide
-         * @property {function} show
+         * @event SDM#fail
+         *
+         * @property {object}   event
+         * @property {object}   event.detail
+         * @property {string}   event.detail.id
+         * @property {function} event.detail.hide
+         * @property {function} event.detail.show
          */
         this.events.pub('fail', {
             id   : id,
@@ -855,7 +858,10 @@ var SDM = SDM || (function() {
      * @method  pull
      * @param   {string} id
      * @param   {string} action
-     * @fires   SDM#loadstart:dropstart:holdstart:openstart
+     * @fires   SDM#loadstart
+     * @fires   SDM#dropstart
+     * @fires   SDM#holdstart
+     * @fires   SDM#openstart
      * @returns {object}
      */
     self.prototype.pull = function(id, action) {
@@ -872,12 +878,18 @@ var SDM = SDM || (function() {
         /**
          * Tell subscribers action has been started
          *
-         * @event    SDM#loadstart:dropstart:holdstart:openstart
-         * @property {string}   id
-         * @property {function} done
-         * @property {function} fail
-         * @property {function} hide
-         * @property {function} show
+         * @event SDM#loadstart
+         * @event SDM#dropstart
+         * @event SDM#holdstart
+         * @event SDM#openstart
+         *
+         * @property {object}   event
+         * @property {object}   event.detail
+         * @property {string}   event.detail.id
+         * @property {function} event.detail.done
+         * @property {function} event.detail.fail
+         * @property {function} event.detail.hide
+         * @property {function} event.detail.show
          */
         this.events.pub(action + 'start', {
             id   : id,
@@ -897,7 +909,12 @@ var SDM = SDM || (function() {
      * @param   {string}           id
      * @param   {object}           data
      * @param   {undefined|string} action
-     * @fires   SDM#drawstart:drawfinish:loadfinish:dropfinish:holdfinish:openfinish
+     * @fires   SDM#drawstart
+     * @fires   SDM#drawfinish
+     * @fires   SDM#loadfinish
+     * @fires   SDM#dropfinish
+     * @fires   SDM#holdfinish
+     * @fires   SDM#openfinish
      * @returns {object}
      */
     self.prototype.push = function(id, data, action) {
@@ -913,10 +930,16 @@ var SDM = SDM || (function() {
             /**
              * Tell subscribers action has been finished
              *
-             * @event    SDM#loadfinish:dropfinish:holdfinish:openfinish
-             * @property {string}   id
-             * @property {function} hide
-             * @property {function} show
+             * @event SDM#loadfinish
+             * @event SDM#dropfinish
+             * @event SDM#holdfinish
+             * @event SDM#openfinish
+             *
+             * @property {object}   event
+             * @property {object}   event.detail
+             * @property {string}   event.detail.id
+             * @property {function} event.detail.hide
+             * @property {function} event.detail.show
              */
             this.events.pub((action + 'finish'), {
                 id   : id,
@@ -933,10 +956,13 @@ var SDM = SDM || (function() {
             /**
              * Tell subscribers rendering action has been started
              *
-             * @event    SDM#drawstart
-             * @property {string}   id
-             * @property {function} hide
-             * @property {function} show
+             * @event SDM#drawstart
+             *
+             * @property {object}   event
+             * @property {object}   event.detail
+             * @property {string}   event.detail.id
+             * @property {function} event.detail.hide
+             * @property {function} event.detail.show
              */
             this.events.pub('drawstart', {
                 id   : id,
@@ -957,10 +983,13 @@ var SDM = SDM || (function() {
             /**
              * Tell subscribers rendering action has been finished
              *
-             * @event    SDM#drawfinish
-             * @property {string}   id
-             * @property {function} hide
-             * @property {function} show
+             * @event SDM#drawfinish
+             *
+             * @property {object}   event
+             * @property {object}   event.detail
+             * @property {string}   event.detail.id
+             * @property {function} event.detail.hide
+             * @property {function} event.detail.show
              */
             this.events.pub('drawfinish', {
                 id   : id,
