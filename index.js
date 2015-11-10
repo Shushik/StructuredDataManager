@@ -489,7 +489,7 @@ var SDM = SDM || (function() {
                 this.events.wait('click', this._binded.click, 150);
             break;
             // Exit control has been clicked
-            case 'exit':
+            case 'lose':
                 if (this.mode == 'seek') {
                     this.lose()
                     this.fwd();
@@ -1140,7 +1140,7 @@ SDM.Gui = SDM.Gui || (function() {
             node = this.add('unit', node);
             node = this.add('seek', node);
             this.find = this.add('find', node);
-            this.add('exit', node);
+            this.add('lose', node);
             node = node.parentNode;
             this.add('name', node, args);
             this.add('wait', node, args);
@@ -1316,7 +1316,7 @@ SDM.Gui = SDM.Gui || (function() {
                 }, where);
             break;
             // Create GUI parts and controls
-            case 'exit':
+            case 'lose':
             case 'find':
             case 'hide':
             case 'hint':

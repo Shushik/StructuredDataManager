@@ -31,12 +31,18 @@
     --------------------------------------------------------------------------
      id                  | SDM instance id. This instance could be found
                          | after the initiation by StructuredDataManager[id].
+                         |
+                         | May contain: a-z, 0-9, -.
     --------------------------------------------------------------------------
-     name_txt            | Title text.
+     find_txt            | Search field placeholder text.
     --------------------------------------------------------------------------
      hide_txt            | Hide controll title text.
     --------------------------------------------------------------------------
      hint_txt            | Bottom hint text.
+    --------------------------------------------------------------------------
+     lose_txt            | Search off control title text.
+    --------------------------------------------------------------------------
+     name_txt            | Header text.
     --------------------------------------------------------------------------
      keys                | Custom fields names (keys) for the rows data.
                          |
@@ -49,6 +55,16 @@
     --------------------------------------------------------------------------
      wrapper             | String with the CSS path or DOM node for the wrapper
                          | HTML element. document.body by default.
+    --------------------------------------------------------------------------
+     onfail              | Handler for the event, firing when the data
+                         | loading fails. Takes a DOM.Event object as
+                         | the only argument.
+                         |
+                         | event.detail property contains the following
+                         | properties and methods:
+                         | — id     — selected row id;
+                         | — hide() — hide module;
+                         | — show() — show module.
     --------------------------------------------------------------------------
      ondrawstart(event)  | Handler for the event, firing when the module
                          | rendering starts. Takes a DOM.Event object as
@@ -176,9 +192,6 @@
      opened          | Row which has been focused by mouse singleclick.
     --------------------------------------------------------------------------
      seeked          | Search string.
-    --------------------------------------------------------------------------
-     pulling         | Indicator telling that some external action is
-                     | in process.
     ==========================================================================
 
 
@@ -256,17 +269,16 @@
     It should be html string or array with the row data objects of the
     following structure.
 
-     key             | value
+     key  | value
     ==========================================================================
-     dead            | True if this row should be disabled.
+     dead | True if this row should be disabled.
     --------------------------------------------------------------------------
-     id              | Row id (a-z, 0-9, -).
+     id   | Row id (a-z, 0-9, -).
     --------------------------------------------------------------------------
-     name            | Row title.
+     name | Row title.
     --------------------------------------------------------------------------
-     seek            | Row search index string. If not given it will
-                     | autofilled with the row title in lowercase.
+     seek | Row search index string. If not given it will autofilled with
+          | the row title in lowercase.
     --------------------------------------------------------------------------
-     data            | Array of the children rows objects with the similar
-                     | structure.
+     data | Array of the children rows objects with the similar structure.
     ==========================================================================

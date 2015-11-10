@@ -310,7 +310,7 @@
 
 
 /** Search clear control (beg) */
-.sdm__exit
+.sdm__lose
 {
     font-size: 14px;
 
@@ -322,7 +322,7 @@
     right:    3px;
 }
 
-.sdm__exit:after
+.sdm__lose:after
 {
     content: "×";
 }
