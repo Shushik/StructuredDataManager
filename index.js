@@ -1397,10 +1397,6 @@ SDM.Gui = SDM.Gui || (function() {
             // Get a clean id of the row or rows group
             case 'id':
                 if (args instanceof HTMLElement) {
-                    console.log(args.className.replace(
-                        /[\s\S]*sdm__(col|row|rows)_id_(\S*)[\s\S]*/,
-                        '$2'
-                    ));
                     return args.className.replace(
                         /[\s\S]*sdm__(col|row|rows)_id_(\S*)[\s\S]*/,
                         '$2'
