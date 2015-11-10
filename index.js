@@ -1335,14 +1335,16 @@ SDM.Gui = SDM.Gui || (function() {
                 } else if (typeof args[what + '_txt'] == 'string') {
                     temp.title = args[what + '_txt'];
                 } else if (what == 'hint') {
-                    temp.title = 'Single click — expand; double click — select; ' +
-                                 (
-                                     self.parent.parent.navigator.userAgent.indexOf('Mac OS') != -1 ?
-                                     'Cmd' :
-                                     'Ctrl'
-                                 ) +
-                                 ' + double click — multi select; ' +
-                                 'Esc — close'
+                    temp.title = (
+                        'Single click — expand; double click — select; ' +
+                        (
+                            self.parent.parent.navigator.userAgent.indexOf('Mac OS') != -1 ?
+                            'Cmd' :
+                            'Ctrl'
+                        ) +
+                        ' + double click — multi select; ' +
+                        'Esc — close'
+                    );
                 }
 
                 return self.create(temp, where);
