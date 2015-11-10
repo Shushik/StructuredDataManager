@@ -1336,7 +1336,12 @@ SDM.Gui = SDM.Gui || (function() {
                     temp.title = args[what + '_txt'];
                 } else if (what == 'hint') {
                     temp.title = 'Single click — expand; double click — select; ' +
-                                 'Ctrl + double click — multi select or Cmd + double click; ' +
+                                 (
+                                     self.parent.parent.navigator.userAgent.indexOf('Mac OS') != -1 ?
+                                     'Cmd' :
+                                     'Ctrl'
+                                 ) +
+                                 ' + double click — multi select; ' +
                                  'Esc — close'
                 }
 
