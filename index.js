@@ -1,7 +1,9 @@
 /**
  * Tree structured data manager (ex b-finder)
  *
- * @page     https://github.com/Shushik/StructuredDataManager
+ * GitHub link:  https://github.com/Shushik/StructuredDataManager
+ * Example link: http://silkleo.ru/fun/SDM/
+ *
  * @since    11.2015
  * @author   Shushik <silkleopard@yandex.ru>
  * @license  GNU LGPL
@@ -245,7 +247,7 @@ var SDM = SDM || (function() {
      */
     self.prototype._click = function() {
         this.open();
-        this.gui.move(true);
+        this.gui.mov(true);
     }
 
     /**
@@ -266,20 +268,20 @@ var SDM = SDM || (function() {
                 id = this.opened;
                 this.lose();
                 this.open(id);
-                this.gui.move();
+                this.gui.mov();
             break;
             // Hide GUI window on Esc
             case 27:
                 this.lose();
                 this.fwd();
-                this.gui.move();
+                this.gui.mov();
             break;
             // Set cursor at the downer row
             case 40:
                 event.root.preventDefault();
                 this.gui.find.blur();
                 this.fwd();
-                this.gui.move();
+                this.gui.mov();
             break;
             // Text typing
             default:
@@ -388,7 +390,7 @@ var SDM = SDM || (function() {
                     this._keyup(event);
                 } else {
                     this.hold(this.opened, event.ctrl);
-                    this.gui.move();
+                    this.gui.mov();
                 }
             break;
             // Hide GUI window on Esc
@@ -404,28 +406,28 @@ var SDM = SDM || (function() {
                 if (this.mode != 'seek') {
                     event.root.preventDefault();
                     this.uwd();
-                    this.gui.move();
+                    this.gui.mov();
                 }
             break;
             // Set cursor at the upper row
             case 38:
                 event.root.preventDefault();
                 this.bwd();
-                this.gui.move();
+                this.gui.mov();
             break;
             // Set cursor at the first child row
             case 39:
                 if (this.mode != 'seek') {
                     event.root.preventDefault();
                     this.dwd();
-                    this.gui.move();
+                    this.gui.mov();
                 }
             break;
             // Set cursor at the downer row
             case 40:
                 event.root.preventDefault();
                 this.fwd();
-                this.gui.move();
+                this.gui.mov();
             break;
         }
     }
@@ -442,10 +444,10 @@ var SDM = SDM || (function() {
         if (this.mode == 'seek') {
             this.lose();
             this.open(this.opened);
-            this.gui.move();
+            this.gui.mov();
         } else {
             this.hold(this.opened, ctrl);
-            this.gui.move(true);
+            this.gui.mov(true);
         }
     }
 
@@ -978,7 +980,7 @@ var SDM = SDM || (function() {
             }
 
             // Create cols and rows
-            this.gui.push(data, id, deep);
+            this.gui.ins(data, id, deep);
 
             /**
              * Tell subscribers rendering action has been finished
@@ -1346,6 +1348,33 @@ SDM.Gui = SDM.Gui || (function() {
     }
 
     /**
+     * Remove column, rows group or row node
+     *
+     * @method del
+     * @param  {string}        what
+     * @param  {number|string} id
+     */
+    self.prototype.del = function(what, id) {
+        var
+            node = null;
+
+        // No need to go further
+        if (
+            !id ||
+            !(what + '').match(/^(col|row|rows)/) ||
+            (what == 'col' && id == 0) ||
+            (what == 'rows' && (id == '-' || id == '|'))
+        ) {
+            return;
+        }
+
+        // Get and remove
+        if (node = this.get(what, id)) {
+            node.parentNode.removeChild(node);
+        }
+    }
+
+    /**
      * Get DOM element(s) or dom property
      *
      * @method  get
@@ -1457,72 +1486,15 @@ SDM.Gui = SDM.Gui || (function() {
     }
 
     /**
-     * Deselect the row
-     *
-     * @method mod
-     * @param  {object}            node
-     * @param  {string}            alias
-     * @param  {boolean|string}    value
-     * @param  {undefined|boolean} clear
-     */
-    self.prototype.mod = function(node, alias, value, clear) {
-        node.className = node.className.replace(
-            new RegExp((
-                value === false || clear === false ?
-                '\\s*sdm(__\\S+)?_' + alias + '(_' + (value ? value : '\\S+') + ')+' :
-                '^sdm(__\\S*)?'
-            ), value === false ? 'g' : ''),
-            (
-                value === false || clear === false ?
-                '' :
-                'sdm$1 sdm$1_' + alias + (value ? '_' + value : '')
-            )
-        );
-    }
-
-    /**
-     * Remove an instance
-     *
-     * @method kill
-     */
-    self.prototype.kill = function() {
-        delete this.last;
-        delete this.parent;
-        this.root.innerHTML = '';
-        delete this.root;
-    }
-
-    /**
-     * Scroll to the chosen column
-     *
-     * @method move
-     * @param  {undefined|boolean} yoff
-     */
-    self.prototype.move = function(yoff) {
-        var
-            row = this.last,
-            col = null;
-
-        if (row && (col = row.parentNode.parentNode)) {
-
-            if (!yoff) {
-                col.scrollTop = row.offsetTop;
-            }
-
-            col.parentNode.scrollLeft = col.offsetLeft;
-        }
-    }
-
-    /**
      * Create cols and rows
      *
-     * @method push
+     * @method ins
      * @param  {object}           data
      * @param  {number}           pid
      * @param  {undefined|number} _deep
      * @param  {undefined|object} _cols
      */
-    self.prototype.push = function(data, pid, _deep, _cols) {
+    self.prototype.ins = function(data, pid, _deep, _cols) {
         pid  = pid ? pid : '-';
 
         var
@@ -1576,7 +1548,7 @@ SDM.Gui = SDM.Gui || (function() {
 
                     // Render subitems
                     if (item[this.keys.data]) {
-                        this.push(
+                        this.ins(
                             item[this.keys.data],
                             item[this.keys.id],
                             deep + 1,
@@ -1603,6 +1575,66 @@ SDM.Gui = SDM.Gui || (function() {
                 }
             break;
         }
+    }
+
+    /**
+     * Deselect the row
+     *
+     * @method mod
+     * @param  {object}            node
+     * @param  {string}            alias
+     * @param  {boolean|string}    value
+     * @param  {undefined|boolean} clear
+     */
+    self.prototype.mod = function(node, alias, value, clear) {
+        node.className = node.className.replace(
+            new RegExp((
+                value === false || clear === false ?
+                '\\s*sdm(__\\S+)?_' + alias + '(_' + (value ? value : '\\S+') + ')+' :
+                '^sdm(__\\S*)?'
+            ), value === false ? 'g' : ''),
+            (
+                value === false || clear === false ?
+                '' :
+                'sdm$1 sdm$1_' + alias + (value ? '_' + value : '')
+            )
+        );
+    }
+
+    /**
+     * Scroll to the chosen column
+     *
+     * @method mov
+     * @param  {undefined|boolean} yoff
+     * @param  {undefined|boolean} xoff
+     */
+    self.prototype.mov = function(yoff, xoff) {
+        var
+            row = this.last,
+            col = null;
+
+        // Scroll to a column and row if the axis indicator isn't true
+        if (row && (col = row.parentNode.parentNode)) {
+            if (!yoff) {
+                col.scrollTop = row.offsetTop;
+            }
+
+            if (!xoff) {
+                col.parentNode.scrollLeft = col.offsetLeft;
+            }
+        }
+    }
+
+    /**
+     * Remove an instance
+     *
+     * @method kill
+     */
+    self.prototype.kill = function() {
+        delete this.last;
+        delete this.parent;
+        this.root.innerHTML = '';
+        delete this.root;
     }
 
     return self;
@@ -1830,7 +1862,7 @@ SDM.Events = SDM.Events || (function() {
     }
 
     /**
-     * Stop an event timer
+     * Stop a delayed action
      *
      * @method  halt
      * @param   {string} timer
@@ -1876,7 +1908,7 @@ SDM.Events = SDM.Events || (function() {
     }
 
     /**
-     * Fire an event with timer
+     * Delay an action
      *
      * @method  wait
      * @param   {string} timer
