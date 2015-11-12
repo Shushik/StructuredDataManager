@@ -53,6 +53,8 @@
                          | — name — row title property key;
                          | — seek — row search index text property key.
     --------------------------------------------------------------------------
+     schema              | 
+    --------------------------------------------------------------------------
      wrapper             | String with the CSS path or DOM node for the wrapper
                          | HTML element. document.body by default.
     --------------------------------------------------------------------------
