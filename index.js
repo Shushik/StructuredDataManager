@@ -9,13 +9,11 @@
  * @license  GNU LGPL
  * @version  2.0
  * @tutorial readme.txt
- *
- * @class SDM
  */
 var SDM = SDM || (function() {
 
     /**
-     * @constructor
+     * @constructor SDM
      *
      * @param {object} args
      */
@@ -26,6 +24,11 @@ var SDM = SDM || (function() {
                 return new self(args);
             }
 
+            var
+                it0  = 0,
+                al0  = '',
+                bind = this._bind.split(';');
+
             // Try to reach the arguments object
             args = typeof args == 'object' ? args : {};
 
@@ -34,15 +37,26 @@ var SDM = SDM || (function() {
             this.id = typeof args.id == 'string' ? args.id : self.prototype.id + '';
             self[this.id] = this;
 
-            // Init module
-            this.init(args);
+            // Reset ids, indicators and stacks
+            this.mode   = 'hide';
+            this.holded = '';
+            this.opened = '';
+            this.events = {};
+
+            // Create the proxied methods links
+            if (it0 = bind.length) {
+                while (--it0 > -1) {
+                    al0 = bind[it0];
+                    this[al0] = this[al0].bind(this);
+                }
+            }
 
             // Init submodules
             this.gui    = self.Gui(args, this);
             this.events = self.Events(args, this);
 
             // Set user generated events
-            this.events.sub('mousedown', this._binded.live);
+            this.events.sub('mousedown', this._live);
 
             // Load data for the root column
             if (args.onloadstart) {
@@ -87,6 +101,16 @@ var SDM = SDM || (function() {
     self.prototype.id = 0;
 
     /**
+     * List of the methods that should be always used in instance context
+     *
+     * @private
+     *
+     * @member {string} _bind
+     */
+    self.prototype._bind = 'fail;hide;show;_live;_seek;_click;' +
+                           '_droped;_holded;_loaded;_opened';
+
+    /**
      * Module mode
      *
      * @member {string} mode
@@ -113,15 +137,6 @@ var SDM = SDM || (function() {
      * @member {string} seeked
      */
     self.prototype.seeked = '';
-
-    /**
-     * Binded instance methods stack
-     *
-     * @private
-     *
-     * @member {object} _binded
-     */
-    self.prototype._binded = null;
 
     /**
      * Gui operations module instance link
@@ -296,7 +311,7 @@ var SDM = SDM || (function() {
 
                     this.events.wait(
                         'keyup',
-                        this._binded.seek,
+                        this._seek,
                         300
                     );
                 }
@@ -486,7 +501,7 @@ var SDM = SDM || (function() {
                 this.opened = id;
 
                 // Delay the cursor set
-                this.events.wait('click', this._binded.click, 150);
+                this.events.wait('click', this._click, 150);
             break;
             // Exit control has been clicked
             case 'lose':
@@ -611,8 +626,8 @@ var SDM = SDM || (function() {
          */
         this.events.pub('fail', {
             id   : id,
-            hide : this._binded.hide,
-            show : this._binded.show
+            hide : this.hide,
+            show : this.show
         });
 
         // Remove loading class
@@ -693,51 +708,25 @@ var SDM = SDM || (function() {
     }
 
     /**
-     * Init the module
-     *
-     * @method  init
-     * @param   {object} args
-     * @returns {object}
-     */
-    self.prototype.init = function(args) {
-        // Reset ids, indicators and stacks
-        this.mode   = 'hide';
-        this.holded = '';
-        this.opened = '';
-        this.events = {};
-
-        // Create the proxied methods links stack
-        this._binded = {
-            hide   : this.hide.bind(this),
-            live   : this._live.bind(this),
-            seek   : this._seek.bind(this),
-            show   : this.show.bind(this),
-            click  : this._click.bind(this),
-            droped : this._droped.bind(this),
-            failed : this.fail.bind(this),
-            holded : this._holded.bind(this),
-            loaded : this._loaded.bind(this),
-            opened : this._opened.bind(this)
-        };
-
-        return this;
-    }
-
-    /**
      * Destroy an instance
      *
      * @method kill
      */
     self.prototype.kill = function() {
         var
-            al0 = '';
+            it0  = 0,
+            al0  = '',
+            bind = this._bind.split(';');
 
         // Hide module
         this.hide();
 
         // Clear binded methods links
-        for (al0 in this._binded) {
-            delete this._binded[al0];
+        if (it0 = bind.length) {
+            while (--it0 > -1) {
+                al0 = bind[it0];
+                delete this[al0];
+            }
         }
 
         // Clear events
@@ -895,10 +884,10 @@ var SDM = SDM || (function() {
          */
         this.events.pub(action + 'start', {
             id   : id,
-            done : this._binded[action + 'ed'],
-            fail : this._binded.failed,
-            hide : this._binded.hide,
-            show : this._binded.show
+            done : this['_' + action + 'ed'],
+            fail : this._fail,
+            hide : this.hide,
+            show : this.show
         });
 
         return this;
@@ -945,8 +934,8 @@ var SDM = SDM || (function() {
              */
             this.events.pub((action + 'finish'), {
                 id   : id,
-                hide : this._binded.hide,
-                show : this._binded.show
+                hide : this.hide,
+                show : this.show
             });
         }
 
@@ -968,8 +957,8 @@ var SDM = SDM || (function() {
              */
             this.events.pub('drawstart', {
                 id   : id,
-                hide : this._binded.hide,
-                show : this._binded.show
+                hide : this.hide,
+                show : this.show
             });
 
             // Get the columns deep level
@@ -995,8 +984,8 @@ var SDM = SDM || (function() {
              */
             this.events.pub('drawfinish', {
                 id   : id,
-                hide : this._binded.hide,
-                show : this._binded.show
+                hide : this.hide,
+                show : this.show
             });
         }
 
@@ -1047,8 +1036,8 @@ var SDM = SDM || (function() {
             this.gui.mod(this.gui.root, 'mode', 'view');
 
             // Set Gui keyboard event
-            this.events.sub('keyup',   this._binded.live);
-            this.events.sub('keydown', this._binded.live);
+            this.events.sub('keyup',   this._live);
+            this.events.sub('keydown', this._live);
         }
 
         return this;
@@ -1084,13 +1073,11 @@ var SDM = SDM || (function() {
 
 /**
  * Gui operations module
- *
- * @class SDM.Gui
  */
 SDM.Gui = SDM.Gui || (function() {
 
     /**
-     * @constructor
+     * @constructor SDM.Gui
      *
      * @param {object} args
      * @param {object} parent
@@ -1112,12 +1099,12 @@ SDM.Gui = SDM.Gui || (function() {
             this.parent = parent;
 
             // Save the custom fields names schema
-            if (args.keys) {
+            if (args.data_keys) {
                 this.keys = {};
 
                 for (al0 in self.prototype.keys) {
-                    this.keys[al0] = args.keys[al0] ?
-                                     args.keys[al0] :
+                    this.keys[al0] = args.data_keys[al0] ?
+                                     args.data_keys[al0] :
                                      self.prototype.keys[al0];
                 }
             }
@@ -1648,13 +1635,11 @@ SDM.Gui = SDM.Gui || (function() {
 
 /**
  * Events operations module
- *
- * @class SDM.Events
  */
 SDM.Events = SDM.Events || (function() {
 
     /**
-     * @constructor
+     * @constructor SDM.Events
      *
      * @param {object} handlers
      * @param {object} parent

@@ -525,7 +525,7 @@
 
 
 
-/** Preview (beg) */
+/** Preview wrapper (beg) */
 .sdm__box
 {
     text-align: left;
@@ -534,4 +534,4 @@
 
     padding: 2px 5px 2px 5px;
 }
-/** Preview (end) */
+/** Preview wrapper (end) */

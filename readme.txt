@@ -44,7 +44,7 @@
     --------------------------------------------------------------------------
      name_txt            | Header text.
     --------------------------------------------------------------------------
-     keys                | Custom fields names (keys) for the rows data.
+     data_keys           | Custom fields names (keys) for the rows data.
                          |
                          | May contain the following properties:
                          | — id   — row id property key;
@@ -52,8 +52,6 @@
                          | — dead — row disabled indicator property key;
                          | — name — row title property key;
                          | — seek — row search index text property key.
-    --------------------------------------------------------------------------
-     schema              | 
     --------------------------------------------------------------------------
      wrapper             | String with the CSS path or DOM node for the wrapper
                          | HTML element. document.body by default.
